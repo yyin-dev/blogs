@@ -1,144 +1,3 @@
-## Overview
-
-- Circuit-switched vs Packet-switched
-
-- Difference between switch and router
-    - Switch: within a Local Area Network (LAN), only in layer 2 protocols.
-    - Router: between different LANs or even larger networks, only in layer 3 protocols. 
-
-- Forwarding and Routing
-
-    - Packet: data chunk + header
-    - Forwarding: transmit a packet towards the destination using forwarding table
-    - Routing: the process of establishing forwarding table
-
-- Multiplexing: 
-
-    - time division multiplexing (TDM): allocating time slices
-    - frequency division multiplexing (FDM): allocating frequency
-    - statistical multiplexing: queueing packets. Possible problem: congestion, packet loss.
-
-- Protocol
-
-    - Definition: specification for interface between modules on different machines
-    - Characteristics: data format, rules for information exchange, service implemented
-
-- Internet layered architecture
-
-    ```
-    L5: Application -> define interactions with users
-    L4: Transport   -> define logical channels between apps and the network
-    L3: Network     -> define how packets move (routing + forwarding)
-    L2: Link        -> define how hosts access physical layer
-    L1: Physical    -> cabal and bit representations
-    
-                    Data unit    Protocols
-    +------------+
-    | Application|  message      HTTP, FTP, Email, ...
-    +------------+
-    | Transport  |  message          TCP, UDP
-    +------------+      
-    | Network    |  packet               IP
-    +------------+
-    | Link       |  frame        Ethernet, ...
-    +------------+
-    | Physical   |  bit          Cabel
-    +------------+
-    ```
-
-    - Routers use up to network layer, while switches use only up to link layer.
-    - Packet and frame are just different names for the same thing.
-    - Encapsulation & Decapsulation
-      - Encapsulation: Adding headers when data moving down the stack
-      - Decapsulation: Removing headers when data moving up the stack
-
-- Performance
-
-    - Bandwidth: amount of bits **transmitted** (by the transmitter) per unit time. The rate at which bit encoding is generated.
-    - Latency: time needed to transfer one bit between two nodes. Three parts: propagation delay, queueing delay, transmit delay.
-
-- Error detection & handling
-
-    - Strategy: redundancy
-    - Goal: all packets with errors are detected and dropped (recovering is too expensive). The procedure should detect common case errors, while being computationally efficient and minimizing redundant bits needed.
-
-
-
-## Physical Layer
-
-- Different physical media with different signal-carrying properties. 
-- Bit encodings for copper wire. Non-return to Zero (NRZ), Non-return to Zero Inverted (NRZI), Manchester. 
-- Framing: detecting the start/end of packet. Sentinel method. Byte-couting. Clock-based.
-
-
-
-## Link Layer
-
-- Concerned with data transfer in the same Local Area Network (LAN). 
-
-- Challenge: Multiple hosts communicate simultaneously using the same channel, i.e., Multiple-access network.
-
-- Solution: **Media Access Control** (MAC). Ethernet, WiFi, etc.
-
-  
-
-### Ethernet
-
-- Physical properties
-
-  - Ethernet segment: a cable with length up to 500m
-
-  - Transceiver: each host has a transceiver, which can transmit and receive bits
-
-  - Repeater: blindly forwards bit between Ethernet segments. Operates at the physical layer
-
-  - Hub: a multi-way repeater. Repeats what it hears on one port to all other ports.
-
-    In a Ethernet, regardless of the number of segments and network topology, data transmitted by any one host reaches all the other hosts, so all these hosts are competing for access to the same link. This is way they are said to be in the same *collision domain*.
-
-    Ethernet segments connected using repeaters/hubs remain in the same collision domain.
-
-  - Switch: connecting multiple collision domains, operating at Link Layer.  When a switch receives a packet, it examines its destination MAC address: if the packet is for another LAN, it forwards it on the corresponding port; otherwise, the packet is dropped. A switch fully implements the Ethernet's collision detection and media access control protocol.
-
-    Ethernet segments connected using switches remain separate collision domains. More on this later.
-
-    A learning switch: maintains a forwarding table between LANs. The forwarding table begins emtpy. When receiving a packet, the switch examines the source MAC address and make entries in the forwarding table. If no entry exists for destination, boardcast on all other ports. 
-
-    The learning switches work unless there's a loop in the network. Spanning Tree Protocol (STP) solves the problem, by finding a spanning tree in the network and remove unused edges. Each switch decides the ports that are used/unused. STP is dynamic, ready to readapt to changed network.
-
-    Historically, nodes form Ethernet segments, and switches connect Ethernet segments. Nowadays, nodes are directly connected to switches and switches are inter-connected with each other: switched Ethernet.
-
-- Frame format
-
-  ![Ethernet frame format](ethernet-frame-format.jpg)
-  
-  MAC address is assigned by hardware manifacture of the network chips.
-  
-- MAC for Ethernet
-
-  Carrier-sense, multiple-access, with collision detection (CSMA/CD).
-
-  Transmitter algorithm  
-
-  1. When the adaptor has a frame to send and the line is idle, it transmits the frame immediately. If the sender has multiple packets to send, wait for an "interframe gap" (96 bit-time, 9.6 microseconds) in before packets.
-
-  2. When an adaptor has a frame to send and the line is busy, it waits for the line to go idle. When the line gets idle, all waiting adaptors wait for an interframe gap and then transmits. Collision can occur when more than one adaptors thinks the line is idle and transmits at the same time.
-
-  3. At the moment a sender detects a collision (receives packet during transmitting), it transmits a 32-bit jamming sequence and stops transmission.  
-
-     The collision detection mechanism requires each frame to be >= 64 bytes on a 10-Mbps Ethernet (14-byte headers + 46-byte payload + 4-byte CRC). Why 64 bytes? Consider the worst case when hosts A and B located at opposite ends of the network. Suppose host A begins transmitting a frame at time t. It takes one link latency (let's denote the latency as d) for the frame to reach host B. Thus, the first bit of A's frame arrives at B at time t+d. Suppose an instant before host A's frame arrives (i.e., B still sees an idle line), host B begins to transmit its own frame. B's frame will immediately collide with A's frame, and this collision will be detected by host B. Host B will send the 32-bit jamming sequence. Unfortunately, host A will not know that the collision occurred until B's frame reaches it, which will happen one link latency later, at time t+2×d. In other words, host A must transmit for 2×d to be sure that it detects all possible collisions. Considering that a maximally configured Ethernet is 2500 m long, and that there may be up to four repeaters between any two hosts, the round-trip delay has been determined to be 51.2 μs, which on a 10-Mbps Ethernet corresponds to 512 bits = 64 bytes.  
-
-  4. Once an adaptor detects a collision and stops its transmission, it waits a certain amount of time and tries again. Each time it tries transmitting and fails, the adaptor doubles the amount of time it waits before next try. This strategy is called *exponential backoff*.
-
-
-
-
-### Wireless LAN (WLAN) and WiFi
-
-Skipped for now. Doesn't seem like a popular topic for interview.
-
-
-
 ## Network Layer
 
 - Network layer vs Link layer
@@ -276,19 +135,56 @@ Skipped for now. Doesn't seem like a popular topic for interview.
 
       Link-state routing algorithm stabilizes quickly, generates little traffic, has **no problem of count to infinity** and responds rapidly to topology changes. The con is that the amount of information stored at each node can be quite large. Why OSPF is preferred over RIP? **Faster, loop-free convergence**.
 
-  - Inter-domain routing
+    One practial detail about intra-domain routing: the cost communicated and computed are cost to *subnets*, instead of routers. The responsibility for intra-domain routing is to move packet to the **destination subnet**. 
 
-    
+  - Inter-domain routing overview
+
+    While intra-domain routing moves packet to the destination subnet, inter-domain routing moves packet to the destination network (which contains subnets). The problem with intra-domain routing schemes, like RIP or OSPF, is that it requires a router to know all subnets in the network, and all subnet numbers are exchanged in the routing protocol. This doesn't scale to the hugh Internet.
+
+    *Autonomous system* (AS): an administratively independent network. We consider the Internet as a connected ASes. The other name for AS is routing domain. So routing within an AS is called intra-domain routing, and routing between ASes is called inter-domain routing. The basic idea behind AS is to provide an additional way to hierarchically aggregate routing information in a large internet. The AS model also decouples the intra-domain routing from inter-domain routing, so each AS can run its own intra-domain routing protocol. Under the setting of AS, each network is identified by its IP network number, and the AS Number (ASN), a 32-bit identifier. 
+
+    Routing policy can be complicated when commercial contracts are involved. 
+
+    Goals for inter-domain routing: (1) minimize number of network number exchanged/stored; (2) Loop-free path to destination network; (3) The path should be compilant with possibly complicated policies.
+
+    In contrast to intra-domain routing with tries to find shortest path, inter-domain routing tries to find loop-free, policy-compliant path.
+
+    Traffic classification: local traffic vs transit traffic.
+
+    AS classification: *stub AS* has single connection to one other AS, carries only local traffic. *Multi-homed AS* has multiple connections to other ASes, carrying only local traffic. *Transit AS* has multiple connections to other ASes, carrying both local and transit traffic.
+
+    Relationship between ASes can be: customer-provider, peer. The relationship bring hierarchy into the Internet: at the bottom are stub ASes, higher in the hierarchy are ASes being providers and customers are the same time, at the top are pure providers.
+
+  - Border Gateway Protocol (BGP)
+
+    Each AS has >= 1 *border routers* through which **packets enter and leave** the AS (the only entrance & exit of the AS), aka *gateways*. A border is just an IP router forwarding packets between AS's.
+
+    Each AS must also have >= 1 *BGP speaker*, **a router** that "speaks" BGP to other BGP speakers in other AS's. It's common to have border routers as BGP speakers. Keep in mind that **a BGP speaker is a router**.
+
+    BGP advertises complete paths as a vector of ASes to a particular network, to support policies and detect routing loops. Each AS needs an unique identifier. 
+
+    Example: speaker in AS X sends speaker in AS Y the path to AS Z: `path(X, Z) = X, H1, H2, ..., Z`. If Y selects the path (Y, Z) from X, it will send `path(Y, Z) = Y, path(X, Z)`. 
+
+    When a router receives a path vector, if it finds itself in the path, it doesn't propagate it. A given AS only advertises routes that it considers good enough. If a BGP speaker has several choices of several different routes to a destination, it'll choose the best one according to its policies and advertise it. A BGP speaker is not obliged to advertise any route to a destination, even if it has one. This's how an AS can be implemented not to provide transit service.
+
+    As link fails and policies changes, BGP speakers need to cancel previously advertised paths. This is done with a form of negative advertisement called *withdrawn route*. So each [BGP update message](https://book.systemsapproach.org/scaling/global.html#fig-bgpup) contains both withdrawn routes and reachable routes.
+
+    BGP runs on TCP's reliable transmission.
+
+  - Why BGP helps to build scalable network?
+
+    1. The number of nodes participating in BGP is on the order of number of AS's, instead of the number of networks. Usually, each AS contains many networks.
+
+    2. Finding a good inter-domain route is only about finding a path to the border router of the destination AS, of which there are only a few per AS.
+
+    In this way, the complexity of inter-domain routing is on the order of number of AS's, and the complexity of intra-domain routing is on the order of the number of networks in a single AS.
+
+  - Integrating intra-domain and inter-domain
+
+    In the case of a stub AS that only connects to other AS at a single point, the border router is the only choice for all routes that are outside the stub AS. Thus, the border router can inject a *default route* into the intra-domain routing protocol, stating that any network that has not been explicitly advertised in the intra-domain protocol is reachable through the border router. The default entry is the last one in the forwarding table and matches anything that failed to match a specific entry.
+
+    The next step is to have the border routers inject specific routes they learned. Consider, for example, the border router of a provider AS that connects to a customer AS. That router could learn that the network prefix 192.4.54/24 is located inside the customer AS. It could inject a route to that prefix into the routing protocol running **inside the provider AS**. This would cause other routers in the provider AS to learn that this border router is the place to send packets destined for that prefix.
 
 
 
-
-
-
-
-
-
-
-
-
-
+Multicast, IPv6, Mobile IP are skipped for now. Don't seem like popular interview topics.

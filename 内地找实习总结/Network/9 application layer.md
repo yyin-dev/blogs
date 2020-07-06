@@ -57,7 +57,7 @@
 
         A zone corresponds to the fundamental unit of implementation in DNS—the name server. Clients send queries to name servers, and name servers respond with the requested information. Sometimes the response contains the final answer that the client wants, and sometimes the response contains a pointer to another server that the client should query next. Thus, from an implementation perspective, it is more accurate to think of DNS as being represented by a hierarchy of name servers rather than by a hierarchy of domains.
 
-        <img src="https://book.systemsapproach.org/_images/f09-17-9780123850591.png" alt="../_images/f09-17-9780123850591.png" style="zoom: 33%;" />
+        
 
         Each zone is implemented in multiple name servers for redundancy. Each name server implements the zone information as a collection of *resource records*, 5-tuples:
 

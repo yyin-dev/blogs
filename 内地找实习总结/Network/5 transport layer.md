@@ -38,7 +38,7 @@ User Datagram Protocol (UDP). **Connectionless**, **unreliable**, **unordered** 
 
 [<img src="https://book.systemsapproach.org/_images/f05-01-9780123850591.png" alt="../_images/f05-01-9780123850591.png" style="zoom:50%;" />](https://book.systemsapproach.org/_images/f05-01-9780123850591.png)
 
-UDP is used for application that don't reliability, like live streaming. 
+UDP is used for application that don't require reliability, like live streaming. 
 
 UDP packets are "fully defined" when they can be associated with an application unambiguously: they are demultplexed based on `<IP address, port>` pair.
 
@@ -50,7 +50,7 @@ That's everything about UDP, a simple demultiplexer using port.
 
 - ACK mechanism
 
-    Goal: reliable transmission. Basic mechanism: ACK, i.e. acknowledgement-based reliability. This implies that the need for a timeout mechanism, called RTO (Retransmit TimeOut). 
+    Basic mechanism: ACK, i.e. acknowledgement-based reliability. This implies that the need for a timeout mechanism, called RTO (Retransmit TimeOut). 
 
     Setting an appropriate RTO is important in this simple mechanism. If the timeout is too long, you can be wasting time waiting; If the timeout is too short, you would be resending data. Let's say the server sends out D1 and the client receives it and sends back ACK1. But since the RTO is too short, RTO fires before ACK1 arrives at the server so server sends D1 again. By the protocol, whenever the server receives an ACK, it sends out the next data packet. So D2 gets sent. If this pattern continues, the server is going to send out twice many packets as needed! Also, the receiver needs to handle duplicates.
 
@@ -271,3 +271,20 @@ Flow control v.s. congestion control: flow control is to avoid sender from sendi
             
             - Do not sample RTT for data packets that have been resent due to time out.
             - Exponentially increase RTO value for **resent** packet.
+            
+        - Jacobson's algorithm
+        
+            Timeout is closely related to congestion. If timeout is too short, you're adding unnecessary load to the network. Jacobson's algorithm provides better RTO estimation.
+        
+            The main problem with the original computation is that it does not take the **variance** of the sample RTTs into account. Intuitively, if the variation among samples is small, then the `EstimatedRTT` can be better trusted and there is no reason for `RTO = 2 * EstimatedRTT`. On the other hand, a large variance in the samples suggests that the timeout value should not be too tightly coupled to the `EstimatedRTT`.
+        
+            In the new approach, the sender measures a new `SampleRTT` as before, but folds this new sample into `RTO` differently:
+        
+            ```
+            Difference = SampleRTT - EstimatedRTT
+            EstimatedRTT = EstimatedRTT + (delta x Difference), where 0 < delta < 1
+            Deviation = Deviation + delta (|Difference| - Deviation)
+            Timeout = mu * EstRTT + phi * Deviation, where mu = 1 and phi = 4
+            ```
+        
+            With this, when variance is small, `Timeout` is close to `EstimiatedRTT`; when variance is large, `Deviation` dominates the computation of `Timeout`.
