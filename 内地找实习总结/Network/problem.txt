@@ -1,0 +1,61 @@
+- Is WiFi CSMA/CA or MACA? 
+Ans: It is carrier-sense. The request-to-send message would only be sent if the 
+channel is clear. 
+
+- Is the statement correct? MAC is a general name for protocol used at link-layer. 
+MAC can be channel partitioning, taking-turns and random-manner. For example, if
+the underlying protocol is Ethernet, then MAC address refers to the Ethernet address.
+Ans: correct.
+
+- What happens to IP header when fragmentation happens?
+Ans: The headers are copied (except for the 3 fields: Ident, Flags, Offset). So each
+fragment is a complete IP packet, ready to be fragmented again if needed.
+
+- Fragmentation boundary: 8-bit or 8-byte?
+Ans: 8-byte.
+
+- For class A, class B and class C network, the lowest and highest address is
+reserved. Is there any reserved addresses for subnetting?
+Ans: yes. (Sub)networks of any size has two reserved addrsses. 
+
+- Describe the network activities involved when you type "www.google.com" in your
+browser and hit "Enter".
+Ans:
++ A query is sent to DNS for the IP address of the domain name. 
++ After getting the IP address, you construct a IP packet with necessary information
+(src IP addr, dst IP addr, etc) and send down to link-layer. A forwarding table is
+stored containing <MAC, IP> entires. It would check if there's any entry of the
+dst IP. If yes, send to that MAC address directly using link-layer protocol.
++ If no such entry exists in the table, then the host broadcast ARP query into
+the network. Some switch would be configured to handle a packet to IP address
+outside the LAN. So the host would receive the MAC address of that special
+switch and send the packet to that switch.
++ The switch is configured to send any packet destined for some hosts outside
+the LAN to some router for inter-network routing. 
++ When the router receives the packet, it would use the prefix of the IP address
+of the destination address to look into its forwarding table containing 
+<network number, interface> entries, and forward the packet accordingly.
++ When the packet eventually arrives at the destination network. The router would
+look into the forwarding table containing <subnet number, subnet mask, interface> 
+to forward the packet to the destination subnet. Within the subnet, link-layer 
+protocol would be used to deliver the packet to the destination host.
+
+Three kinds of forwarding table:
+Routers between networks: <ID prefix(network number), inteface>
+Routers within a network: <subnet number, subnet mask, interface>
+Switch/host: <MAC, IP address>
+
+- How does a router/switch/host know what kind of table it should use?
+Ans: by configuration. There's no automatic discovery scheme.  
+
+- Note that when a packet goes forwarded by a router, it has to go through
+the decapsulation process by going up from physical-layer, through link-layer, 
+to network-layer, where the forwarding decision is made. Then it goes through
+the encapsulation process down the layers.
+
+
+
+
+
+
+
