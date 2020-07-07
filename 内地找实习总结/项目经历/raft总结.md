@@ -6,7 +6,7 @@ CAP theorem: Consistency, Availability, Partition tolerance.
 - Availability: the system is functioning all the time
 - Partition: any number of packets can be dropped
 
-The theorem states that a distributed cannot achieve all three at the same time. 
+The theorem states that a distributed system cannot achieve all three at the same time. 
 
 
 
@@ -76,7 +76,7 @@ Leader replicates log entries on other servers.
     3. The above two mentioned majorities overlap, so there exists on server S who has the all committed entry and votes for the new leader.
     4. By the log up-to-date check, the leader's log is at least as up-to-date as S. So the leader also contains all committed entries. 
 
-    Log up-to-date rules checks the term and index of the last log entry.
+    Log up-to-date rules checks the term and index of the last log entry: If the logs have last entries with different terms, the log with the later term is more up-to-date. If the logs end with the same term, the longer log is more up-to-date. The voter denies its vote if its own log is more up-to-date than that of the candidate. (`LastLogIndex` and `LastLogTerm` are present in the `RequestVote` RPC).
 
 - Committing entries from previous term
 
