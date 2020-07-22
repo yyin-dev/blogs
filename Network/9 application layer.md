@@ -129,8 +129,3 @@
     - DNS-based CDN
 
         The CDN takes over operation of the authorative server of a domain.
-
-
-
-
-
