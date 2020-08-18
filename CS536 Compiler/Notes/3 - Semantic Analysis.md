@@ -13,7 +13,7 @@ Two phases: name analysis, type analysis.
   - find name problems
   - add `IdNode` links to symbol table entries
 
-- Symbol table entry information: kind (struct, variable, function), type (int, int x string -> bool), scope, etc.
+- Symbol table entry information: kind (struct, variable, function), **type** (int, int x string -> bool), scope, etc.
 - Symbol table operations: insert entry, lookup, add new table, remove a table.
 - Many design choices: static/dynamic scoping, overloading, variable shadowing, foward references...
 - Our language: static scope, variable shadowing allowed
@@ -32,7 +32,7 @@ Two phases: name analysis, type analysis.
   - Means of determining if types are compatible
   - Type inferring rules
 
-- Implementation: similar to name anslysis, recursively walk the AST checking types. Examples:
+- Implementation: similar to name anslysis, recursively walk the AST checking types. Bear in mind that **the symbol table contains typing information**. Examples:
 
   - Binary operator
 

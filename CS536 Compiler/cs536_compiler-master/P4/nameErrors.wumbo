@@ -1,0 +1,261 @@
+// Test multiple declared variable
+int func(int foo) {
+    bool foo; // Expect error
+}
+struct testMultiDeclStruct {
+    int multiDecl;
+    bool multiDecl; // Expect error
+};
+
+int multiDecl2() {}
+struct multiDecl2 { // Expect error
+    int foo;
+};
+
+// Test use of undeclared names
+void testUseUndeclared() {
+    int foo;
+    foo = 1;
+    bar = 1;    // Expect error
+}
+
+// Test struct instance declaration()
+struct declaredStruct {
+    int i;
+};
+
+void testStructInstanceDecl() {
+    struct declaredStruct ds;
+    struct undeclaredStruct uds; // Expect error
+}
+
+
+// Test access using dot notation
+void testStructAccess() {
+    struct declaredStruct instance;
+    int nonStructInstance;
+    instance.i = 1;
+    instance.j = 2; // Expect error
+    nonStructInstance.a = 1; // Expect error
+}
+
+// Test bad declaration
+void functionWithVoidReturnType() {
+    int a;
+    void b; // Expect error
+    void a; // Expect 2 errors
+    struct b c; // Expect 1 error (invalid struct type)
+    struct nonExistingStructType d; // expect
+}
+
+int voidTypeNotAllowedForFormal(void a) {} // expect error
+
+// Test forward declartion error reporting
+void f() {
+    g(); // expect error
+}
+void g() {
+    return something; // expect error
+}
+int something;
+
+// 10. Invalid declaration should not be added to symTable
+void example(){
+	void a; // expect: Non-fucntion declared void
+	struct nonexistent b; // expect: Invalid name of struct type
+	a = 3; // expect: Undeclared identifier
+	b = 4; // expect: Undeclared identifier
+}
+
+// Local variable shadows global declaration
+struct a {
+	int field;
+};
+
+int main(){
+	int a;
+	struct a name; // expect: Invalid name of struct type
+}
+
+// Identifier same as struct type
+struct aa {
+	int b;
+};
+
+void identifierSameAsStructType() {
+    int aa;
+    struct aa b; // expect: Invalid name of struct type
+	struct aa aa; // Expect 2 errors
+}
+
+// Duplicate struct declaration
+struct str {
+    int a;
+};
+
+struct str { // expect: Multiply declared identifier
+    int c ;
+    int c ; // no need to report Multiply declared ID since we don't need to process the field here
+};
+
+/////////////////////
+// Test P4 Summary //
+/////////////////////
+// 1. Struct
+// 1.1 Struct name already declared
+void declared() {}
+struct declared { // expect: Muitply declared
+    int a;
+};
+
+// 1.2 Variable in struct can have the same name as variable/function outside
+void declaredOutside() {}
+int anotherOutside;
+struct S {
+    int declaredOutside;
+    bool anotherOutside;
+};
+
+// 1.3 Duplicate name within the same struct is illegal. 
+//     Create SymTable for the struct and add all variables up to but excluding 
+//     the second occurrence of x and then continue with the remaining.
+//     Uncomment printing code in ast.java::StructDeclNode::nameAnalysis() to see the
+//     content of the symbol table.
+//     SymTable for S should be: {x=int, y=int, z=int, a=int, b=bool, c=bool}
+struct duplicateNameWithinSameStruct {
+    int x;
+    int y;
+    int z;
+    bool x; // expect: should be excluded
+    bool y; // expect: should be excluded
+    int a; 
+    bool z; // expect: should be excluded
+    bool b;
+    bool c;
+};
+
+// 1.4 If a struct is used without declaration like a.b, two options: 
+//     - report two errors (undeclared ID and dot access of non-struct type), or;
+//     - you can just report undeclared ID.
+//     I chose the 2nd option.
+struct Inner {
+    int i;
+};
+
+struct Outer {
+    struct Inner inner;
+};
+
+void testUseStructWithoutDeclaration() {
+    int x;
+    struct Outer outerObj;
+    struct Inner innerObj;
+
+    x.foo = 1; // Expect Dot-access of non struct
+    outerObj.nonExisting = 1; // Expect Invalid struct field
+    outerObj.inner.j = 1; // Expect Invalid struct field
+    outerObj.inner.i = 1;
+}
+
+// 1.5 The name of the struct is in a scope that is one level outside the scope 
+//     of the struct itself. Thus, a struct and one of its members can have the 
+//     same name.
+//     SymTable for SameNameAsMember should be: {SameNameAsMember=int}
+struct SameNameAsMember {
+    int SameNameAsMember; 
+};
+
+
+// 2. Function
+// 2.1 A function with the same name as another function in the same scope is illegal. 
+//     No new SymTable entry in the outer scope for the second occurrence. However,
+//     process the formals and the local variables for both the functions.
+void funcWithSameName() {}
+int funcWithSameName() { // expect error
+    int shouldBeReported; 
+    bool shouldBeReported; // expect error
+    struct shouldBeReported s; // expect error
+}
+
+// 2.2 A function with the same name as another variable in the same scope is illegal. 
+//     Do not create a SymTable entry for the function. However, continue 
+//     processing the body of the function.
+int var;
+int var() { // expect error
+    int shouldBeReported;
+    bool shouldBeReported; // expect error
+    struct shouldBeReported s; // expect error
+}
+
+// 2.3 Function formal conflict with variable declaration.
+//     If a function with formal parameter a also has a variable declared as a, 
+//     then create the SymTable for the function and add the formal parameter 
+//     but not the local variable and then continue with processing.
+//     Uncomment printing code in ast.java::FnDeclNode::nameAnalysis() to see the
+//     content of the symbol table.
+//     Type of f should be: int->int
+//     SymTable of f should be: {a=int, b=int, c=bool}
+int formalConflictWithVarDecl(int a) {
+    bool a; // expect error
+    int b; 
+    bool c;
+}
+
+// 2.4 Function duplicating-formals/duplicating-variables
+//     Create the SymTable, add the first parameter/local variable, report the 
+//     error and then continue with processing.
+//     Type of f should be: bool,int->int
+//     SymTable of f should contains: {a=bool, b=int}
+//     Type of g should be: ->int
+//     SymTable of g should contains: {a=int, b=int, c=bool}
+int duplicateFormal(bool a, int a, int b) {} // expect error
+int duplicateVarDecl() { 
+    int a; 
+    int b; 
+    bool b;  // expect error
+    bool c;
+}
+
+// 2.5 A function and one of its formals/local variables can have the same name.
+int valid(int valid) {}
+int stillValid() {
+    int stillValid;
+}
+
+// 3. if/else/while
+// 3.1 Reuse name in if/else
+int reuseNameInIfElse() {
+    int a;
+    if (true) {
+        int a;
+        int f;
+        if (f) {
+            bool f;
+            f = true;
+        } else {
+            bool f;
+        }
+    } else {
+        bool a;
+    }
+}
+
+// 3.2 Reuse name in while
+void reuseNameInWhile() {
+    while (true) {
+        bool reuseNameInWhile;
+        if (true) {
+            int reuseNameInWhile;
+        }
+    }
+}
+
+// 3.3 Reuse name in repeat
+void reuseNameInRepeat() {
+    while (true) {
+        bool reuseNameInRepeat;
+        if (true) {
+            int reuseNameInRepeat;
+        }
+    }
+}

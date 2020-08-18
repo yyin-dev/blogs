@@ -69,8 +69,8 @@
   Stmts 	-> ...
   Stmt  	-> id assign Expr
   Expr	-> id
-  		|  Expr plus id
-  		|  num
+           |  Expr plus id
+           |  num
   ```
 
   Left-recursive: `Stmts -> Stmts semicolon Stmt | Stmt`. Not ambiguous.
@@ -149,17 +149,17 @@
   		| lparen Expr rparen
   ```
 
-  In this way, higher-precedence operations appears lower in the tree. As we evaulate in a bottom-up fashion, higher-precedence operations are evaluated earlier. 
+  In this way, higher-precedence operations appears lower in the tree. As we evaulate in a bottom-up way, higher-precedence operations are evaluated earlier. 
 
 - Associativy
 
-  The above grammar is still ambiguous in associativity, e.g. `1-2-3`. Problem: recursive recursion, like `Expr -> Expr minus Expr`. 
+  The above grammar is still ambiguous in associativity, e.g. `1-2-3`. Problem: recursive, like `Expr -> Expr minus Expr`. 
 
   Solution: Define left-associative operations in left-recursive productions, right-associative operations in right-recursive productions.
 
   ```
   Expr 	-> Expr minus Expr
-  		|  Term
+           |  Term
   Term	-> Term times Term
   		|  Factor
   Factor	-> intlit
@@ -187,13 +187,13 @@ So far, we have
 - CFG for language *recognition*: Given string w, is w in L(G)?
 - CFG for language *translation*: Given string w, if w is in L(G), create a parse tree. 
 
-However, parse tree is not good enough yet. Parse tree is also called "concrete syntax tree". Though not shown in the pictures above, parse tree retains all information about the input and grammar, including whitespaces, parenthesis, etc. In other words, parse tree represents the structure (e.g., associativy, precedence) of the syntax, but with noisy details. To remove those unnecessary noise and focus on the abstract relationship, we generate "abstract syntax tree" (AST) from parse tree. [Difference between parse tree and AST](https://stackoverflow.com/q/5026517).
+However, parse tree is not good enough yet. Parse tree is also called "concrete syntax tree". As shown in the pictures below, parse tree retains all information about the input and grammar, including parenthesis, brackets, etc. In other words, parse tree represents the structure (e.g., associativy, precedence) of the syntax, but with noisy details. To remove those unnecessary noise and focus on the abstract relationship, we generate "abstract syntax tree" (AST) from parse tree. [Difference between parse tree and AST](https://stackoverflow.com/q/5026517).
 
 ![](parseTreeVSast.png)
 
 In short, AST is more condensed and usually easier to work with. AST has operands as leafs and operators as internal nodes. 
 
-Syntax Directed Translation: consume a parse tree with actions, by augmenting CFG rules with *translation rules*. The output could be string, integer, AST, etc. When AST is the output, the process is called "parsing".
+Syntax Directed Translation: consume a parse tree with actions, by augmenting CFG productions with *translation rules*. The output could be string, integer, AST, etc. When AST is the output, the process is called "parsing".
 
 **Note**: the previous discussion assumes that a parse tree has already been generated (and we didn't care how this's done). In practice, parse tree is not generated. We combine "syntax -> parse tree -> AST" into one step "syntax -> AST" using certain parsing algorithm (more on this later). Moreover, we don't worry about the implementation of the parsing algorithm. The *parser generator* takes care of this. Read about LL(1) below.
 
@@ -255,7 +255,7 @@ Syntax Directed Translation: consume a parse tree with actions, by augmenting CF
 
   Token stream from scanner, Selector table (columns being terminals, rows being nonterminals), work stack.
 
-- Algorithm
+- Algorithm (for determining if a string can be accepted)
 
   ```
   stack.push(eof)
@@ -276,7 +276,7 @@ Syntax Directed Translation: consume a parse tree with actions, by augmenting CF
   	stack.top() is a non-term and parse table entry is empty (reject)
   ```
 
-  Note that this algorithm **doesn't generate AST** (or any output), but only determines if the string is accepted. 
+  Note that this algorithm **doesn't generate AST**, but only determines if the string is accepted. 
 
   The work stack contains symbols the parser expects to find, based on the prediction rules in selector table. The predictive parser only requires one token of lookahead.
 
@@ -307,9 +307,9 @@ Syntax Directed Translation: consume a parse tree with actions, by augmenting CF
 
 - Implement SDT for LL(1) Parser
 
-  Previously we said that SDT takes parse tree and generates AST bottom-up. LL(1) parser doesn't explicitly build the parse tree, but implicitly track it with stack. So during parsing, we track parse tree (using semantic stack) implicitly and builds AST directly.
+  Previously we said that SDT takes parse tree and generates AST bottom-up. LL(1) parser doesn't explicitly build the parse tree, but implicitly track it with stack. So during parsing, we track parse tree (using *semantic stack*) implicitly and builds AST directly.
 
-  The LL(1) algorithm shown above doesn't generate AST, so here we add translation rules to get AST. In previous discussion, translation rules get information from parse tree nodes and return computed translation result. For LL(1) parser, we get/return information using the *semantic stack*. In particular, we pop translation of RHS nonterminals from the stack, and push computed translation result of LHS to the stack. Those push/pop actions are defined with action numbers and put on the symbol stack, and can appear in the product rule.
+  The LL(1) algorithm shown above doesn't generate AST, so here we add translation rules to get AST. In previous discussion, translation rules get information from parse tree nodes and return computed translation result. For LL(1) parser, we get/return information using the semantic stack. In particular, we pop translation of RHS nonterminals from the stack, and push computed translation result of LHS to the stack. Those push/pop actions are defined with action numbers and put on the symbol stack, and can appear in the product rule.
 
   For terminals, we need to push its value onto the stack. So we put the action number before the symbol. In short, action numbers go **after** nonterminals, but **before** terminals. 
 

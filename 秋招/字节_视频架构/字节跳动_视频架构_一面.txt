@@ -1,0 +1,72 @@
+1. 说说Copy on Write的目的和实现。
+2. 32位，512MB内存的机器，可以分配1GB内存吗？我说可以用swap space。然后说如果没有硬盘怎么办？我说不可以，但是应该有办法的把。
+3. 分布式主要是解决什么问题？性能，CAP每个说了一下。
+4. 浏览器输入地址到显示，发生了什么。说一下DNS，TCP的三次握手。我说不了解HTTPS，就没有问。
+5. 算法题：二叉树的右视图。
+vector<int> rightView(TreeNode* root) {
+    if (!root) return {};
+    
+    queue<TreeNode*> q({root});
+    vector<int> vals;
+    while (!q.empty()) {
+        int len = q.size();
+        for (int i = 0; i < len; i++) {
+            TreeNode* node = q.front();
+            q.pop();
+            
+            if (node->left) q.push(node->left);
+            if (node->right) q.push(node->right);
+            if (i == len - 1)
+                vals.push_back(node->val);
+        }
+    }
+    return vals;
+}
+
+5. 算法题： 
+输入=>
+O  O  O
+O  X  O
+O  X  O
+
+输出=>
+2 1 2
+1 0 1
+1 0 1
+
+输出为每个格子到最近X的距离。
+
+刚开始卡了一下，说用暴力解。O(n^2) * O(n^2)，从每个地方用BFS。后来说目标是O(n^2)。我说用priority_queue（最小堆）。他说为什么要用最小堆？这题和上一题是不是有点相似？我就想到直接用queue就可以了。
+vector<vector<int>> minDistance(vector<vector<int>> M) {
+    int n = M.size();
+    vector<vector<int>> res(n, vector<int>(n, INT_MAX));
+    queue<pair<int, int>> q;
+    
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (M[i][j] == 'X') {
+                q.push({i, j});
+                res[i][j] = 0;
+            }
+        }
+    }
+    
+    while (!q.empty()) {
+        pair<int, int> curr = q.front();
+        q.pop();
+        
+        vector<vector<int>> directions({{-1, 0}, {1, 0}, {0, -1}, {0, 1}});
+        for (vector<int>& dir : directions) {
+            int currRow = curr.first, currCol = curr.second;
+            int row = currRow + dir[0], col = currCol + dir[1];
+            if (row < 0 || row == n || col < 0 || col == n) continue;
+            int currDis = res[currRow][currCol];
+            if (currDis + 1 < res[row][col]) {
+                res[row][col] = currDis + 1;
+                q.push({row, col});
+            }
+        }
+    }
+    
+    return res;
+}

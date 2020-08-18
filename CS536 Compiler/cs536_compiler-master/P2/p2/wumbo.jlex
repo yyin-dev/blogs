@@ -1,0 +1,231 @@
+import java_cup.runtime.*; // defines the Symbol class
+
+// The generated scanner will return a Symbol for each token that it finds.
+// A Symbol contains an Object field named value; that field will be of type
+// TokenVal, defined below.
+//
+// A TokenVal object contains the line number on which the token occurs as
+// well as the number of the character on that line that starts the token.
+// Some tokens (literals and IDs) also include the value of the token.
+
+class TokenVal {
+  // fields
+    int linenum;
+    int charnum;
+  // constructor
+    TokenVal(int line, int ch) {
+        linenum = line;
+        charnum = ch;
+    }
+}
+
+class IntLitTokenVal extends TokenVal {
+  // new field: the value of the integer literal
+    int intVal;
+  // constructor
+    IntLitTokenVal(int line, int ch, int val) {
+        super(line, ch);
+        intVal = val;
+    }
+}
+
+class IdTokenVal extends TokenVal {
+  // new field: the value of the identifier
+    String idVal;
+  // constructor
+    IdTokenVal(int line, int ch, String val) {
+        super(line, ch);
+    idVal = val;
+    }
+}
+
+class StrLitTokenVal extends TokenVal {
+  // new field: the value of the string literal
+    String strVal;
+  // constructor
+    StrLitTokenVal(int line, int ch, String val) {
+        super(line, ch);
+        strVal = val;
+    }
+}
+
+// The following class is used to keep track of the character number at which
+// the current token starts on its line.
+class CharNum {
+    static int num=1;
+}
+
+class Utility {
+  public static Symbol parseBasic(int tokenNum, int lineNum, String text) {
+    Symbol s = new Symbol(tokenNum, new TokenVal(lineNum, CharNum.num));
+    CharNum.num += text.length();
+    return s;
+  }
+}
+
+// The most challenging JLex rules are for the STRINGLITERAL token (for which 
+// you will need several rules: for a correct string literal, for an 
+// unterminated string literal, for a string literal that contains a 
+// bad escaped character, and for a string literal that contains a bad 
+// escaped character and is unterminated).
+// The special case is with the new line character. What is the difference
+// between the following 2 strings?
+// "foo\n"
+// "foo
+// "
+// The problem is a backslash as the last character on the line, which is just 
+// like escaping a newline character. The regex matching should stop.
+// The case of escaping a newline character (backslash at the end of a line)
+// is special. It should not be considered like a normal bad escape but should 
+// be categorized as a VERY bad string, instead of a string containging
+// bad escape.
+// So in CANT_ESCAPE, we also negate {NEWLINE}. So there're two possibilites for
+// VERY_BAD_STR:
+// (1) The character before the newline character is not a backslash (nor a
+// closing double quote), then the string should contain some other bad escapes
+// and end with a newline character;
+// (2) The character before the newline character is a backslash, then the
+// string might not contain any other bad escapes. But the last character must
+// be the backslash.
+
+%%
+
+DIGIT=        [0-9]
+SPACE=        [\040\t]
+ALPHA=        [a-zA-Z]
+BACKSLASH=    \\
+
+NEWLINE=      \n
+
+ID=           ({ALPHA}|_)({DIGIT}|{ALPHA}|_)* // Nested character class not allowed: [{ALPHA}]
+INTLITERAL=   {DIGIT}+
+
+COMMENT=      (///(.*){NEWLINE})|(##(.*){NEWLINE}) // . would not match \n
+
+DQUOTE=       \"
+CAN_ESCAPE=   [nt'\"?\\]
+CANT_ESCAPE=  [^nt'\"?\\{NEWLINE}]     // {NEWLINE} is special! See comment at the end of previous section.
+GOOD_ESCAPE=  {BACKSLASH}{CAN_ESCAPE}
+BAD_ESCAPE=   {BACKSLASH}{CANT_ESCAPE}
+STRCHAR=      {GOOD_ESCAPE}|[^\n\"\\]  // Good escape or any char, excpet newline, double quote, and backslash
+
+CHAR_AND_ESCAPE=  {STRCHAR}|{BAD_ESCAPE} // {STRCHAR}|{BAD_ESCAPE} matches any char (except newline, double quote, and backslash), and any escape(except escaping a newline)
+WITH_BAD_ESCAPE=  ({CHAR_AND_ESCAPE})*{BAD_ESCAPE}({CHAR_AND_ESCAPE})* 
+UNTERMINATED_STR= {DQUOTE}({STRCHAR})*({NEWLINE}?) // {NEWLINE} is optional. Consider EOF.
+BAD_ESCAPE_STR=   {DQUOTE}{WITH_BAD_ESCAPE}{DQUOTE}
+VERY_BAD_STR=     ({DQUOTE}{WITH_BAD_ESCAPE}({NEWLINE}?))|({DQUOTE}({CHAR_AND_ESCAPE})*\\({NEWLINE}?)) // {NEWLINE} is optional. Consider EOF.
+STRLITERAL=       {DQUOTE}({STRCHAR})*{DQUOTE} // TODO: bad escape + unterminated string
+
+
+%implements java_cup.runtime.Scanner
+%function next_token
+%type java_cup.runtime.Symbol
+
+%eofval{
+return new Symbol(sym.EOF);
+%eofval}
+
+%line
+
+%%
+"bool"    { return Utility.parseBasic(sym.BOOL, yyline+1, yytext()); }
+"int"     { return Utility.parseBasic(sym.INT, yyline+1, yytext()); }
+"void"    { return Utility.parseBasic(sym.VOID, yyline+1, yytext()); }
+"true"    { return Utility.parseBasic(sym.TRUE, yyline+1, yytext()); }
+"false"   { return Utility.parseBasic(sym.FALSE, yyline+1, yytext()); }
+"struct"  { return Utility.parseBasic(sym.STRUCT, yyline+1, yytext()); }
+"cin"     { return Utility.parseBasic(sym.CIN, yyline+1, yytext()); }
+"cout"    { return Utility.parseBasic(sym.COUT, yyline+1, yytext()); }
+"if"      { return Utility.parseBasic(sym.IF, yyline+1, yytext()); }
+"else"    { return Utility.parseBasic(sym.ELSE, yyline+1, yytext()); }
+"while"   { return Utility.parseBasic(sym.WHILE, yyline+1, yytext()); }
+"return"  { return Utility.parseBasic(sym.RETURN, yyline+1, yytext()); }
+
+{ID} { 
+    Symbol s = new Symbol(sym.ID, new IdTokenVal(yyline+1, CharNum.num, yytext()));
+    CharNum.num += yytext().length();
+    return s;
+}
+
+{INTLITERAL}  { 
+    // NOTE: the following computation of the integer value does NOT
+    //       check for overflow.  This must be modified.
+
+    int val;
+    try {
+        val = Integer.parseInt(yytext());
+    } catch(NumberFormatException e) {
+        // https://stackoverflow.com/q/9451066
+        // NumberFormatException can be thrown by Java for reasons other 
+        // than overflow. However, since {DIGIT}+ must match a series of
+        // digits, the only possiblity is overflow, so we are fine. 
+        String msg = "integer literal too large; using max value";
+        ErrMsg.warn(yyline+1, CharNum.num, msg);
+        val = Integer.MAX_VALUE;
+    }
+
+    Symbol s = new Symbol(sym.INTLITERAL, new IntLitTokenVal(yyline+1, CharNum.num, val));
+    CharNum.num += yytext().length();
+    return s;
+}
+
+{UNTERMINATED_STR} {
+    String msg = "unterminated string literal ignored";
+    ErrMsg.fatal(yyline+1, CharNum.num, msg);
+    CharNum.num = 1; 
+}
+
+{BAD_ESCAPE_STR} { 
+    String msg = "string literal with bad escaped character ignored";
+    ErrMsg.fatal(yyline+1, CharNum.num, msg);
+    CharNum.num++; 
+}
+
+{VERY_BAD_STR} {
+    String msg = "unterminated string literal with bad escaped character ignored";
+    ErrMsg.fatal(yyline+1, CharNum.num, msg);
+    CharNum.num = 1; 
+}
+
+{STRLITERAL}  { 
+    Symbol s = new Symbol(sym.STRINGLITERAL, new StrLitTokenVal(yyline+1, CharNum.num, yytext()));
+    CharNum.num += yytext().length();
+    return s; 
+}
+
+{COMMENT} { CharNum.num = 1; }
+
+"{"       { return Utility.parseBasic(sym.LCURLY, yyline+1, yytext()); }
+"}"       { return Utility.parseBasic(sym.RCURLY, yyline+1, yytext()); }
+"("       { return Utility.parseBasic(sym.LPAREN, yyline+1, yytext()); }
+")"       { return Utility.parseBasic(sym.RPAREN, yyline+1, yytext()); }
+";"       { return Utility.parseBasic(sym.SEMICOLON, yyline+1, yytext()); }
+","       { return Utility.parseBasic(sym.COMMA, yyline+1, yytext()); }
+"."       { return Utility.parseBasic(sym.DOT, yyline+1, yytext()); }
+"<<"      { return Utility.parseBasic(sym.READ, yyline+1, yytext()); }
+">>"      { return Utility.parseBasic(sym.WRITE, yyline+1, yytext()); }
+"++"      { return Utility.parseBasic(sym.PLUSPLUS, yyline+1, yytext()); }
+"--"      { return Utility.parseBasic(sym.MINUSMINUS, yyline+1, yytext()); }
+"+"       { return Utility.parseBasic(sym.PLUS, yyline+1, yytext()); }
+"-"       { return Utility.parseBasic(sym.MINUS, yyline+1, yytext()); }
+"*"       { return Utility.parseBasic(sym.TIMES, yyline+1, yytext()); }
+"/"       { return Utility.parseBasic(sym.DIVIDE, yyline+1, yytext()); }
+"!"       { return Utility.parseBasic(sym.NOT, yyline+1, yytext()); }
+"&&"      { return Utility.parseBasic(sym.AND, yyline+1, yytext()); }
+"||"      { return Utility.parseBasic(sym.OR, yyline+1, yytext()); }
+"=="      { return Utility.parseBasic(sym.EQUALS, yyline+1, yytext()); }
+"!="      { return Utility.parseBasic(sym.NOTEQUALS, yyline+1, yytext()); }
+"<"       { return Utility.parseBasic(sym.LESS, yyline+1, yytext()); }
+">"       { return Utility.parseBasic(sym.GREATER, yyline+1, yytext()); }
+"<="      { return Utility.parseBasic(sym.LESSEQ, yyline+1, yytext()); }
+">="      { return Utility.parseBasic(sym.GREATEREQ, yyline+1, yytext()); }
+"="       { return Utility.parseBasic(sym.ASSIGN, yyline+1, yytext()); }
+
+{SPACE}+  { CharNum.num += yytext().length(); }
+\n        { CharNum.num = 1; }
+
+. { 
+    String msg = "ignoring illegal character: " + yytext();
+    ErrMsg.fatal(yyline+1, CharNum.num, msg);
+    CharNum.num++;
+}
