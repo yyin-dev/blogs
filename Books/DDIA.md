@@ -181,7 +181,134 @@ A database does two things: (1) store data given by user; (2) give back data whe
 
 ## Part II. Distributed Data
 
+For scalability, fault-tolerance and latency, you need distributed systems.
 
+### Chapter 5. Replication
+
+- Choices: single-leader/multi-leader/leaderless; synchronous/asynchronous replication?
+- Single-leader replication
+  - Writes go to the leader, while reads can go to followers. 
+  - Set up new followers by snapshot
+  - Follower failure: catch-up recovery
+  - Leader failure (*failover*): Determine leader has failed; choose a new leader; reconfigure followers to the new leader;
+  - Possible problems
+    - For asynchronous replication, writes to old leader might not be replicated to the new leader yet. If former leader rejoins the cluster, what happens to the conflicting writes? Simply discard them (and violates durability guarantee to client)?
+    - How to reliably detect failed leaders and avoid split brain?
+    - What is the right timeout for failure detection?
+  - Replication logs implementation
+    - Statement-based replication: problem with non-deterministic functions and side effects; many edge cases; rarely used.
+    - Write-ahead log (WAL) shipping: WAL used by the database itself is shipped to followers. Problem: very lower-level, closely coupled with the storage engine. The followers must be able to interpret WAL from the leader.
+    - Logical log replication: log (*logical log*) decoupled from the storage engine, to distinguish from storage engine's (*physical*) data representation. For relational databases, logical log is typically row-based, describing changes to the row. Example: MySQL's binlog. Pro: easier to be compatible between leader and followers; can be parsed by external applications.  
+
+- Problem with replication log
+
+  - Cannot use synchronous replication, as it kills performance if more nodes are added. However, log might not be replicated to followers in time. This cause temporary inconsistency - the followers will eventually catch up and become consistent replica. This is *eventual consistency*.
+  - *Read-your-writes consisten*cy. The single-leader approach doesn't guarantee this. Main idea of providing read-you-writes in single-leader approach: use business logic (whether a user may change certain data) or metadata (did the user recently update the data?) to make certain writes go to leader.
+  - *Monotonic reads*. States read by the user should never go back in time. Eventual consistency < monotonic reads < strong consistency. 
+  - *Consistent prefix reads*. If a sequence of writes happen in a certain order, anyone reading those should see them appear in the same order. 
+
+- Multi-leader replication
+
+  - Why multi-leader? In single-leader approach, all writes go through the single-leader, which can become the bottleneck
+  - Pro: the single leader is no longer the bottleneck.
+  - Con: concurrent modifications to the same piece of data (through different leaders) requires conflict resolution.
+  - Use cases
+    - Multi-datacenter: regular leader-replication is used within each datacenter; between datacenters, each datacenter's leader asynchronously replicates its changes to the leaders in other datacenters.
+    - Clients with offline operations: calendar apps on different devices
+    - Real-time collaborative editing
+  - Biggest problem: Conflict Resolution
+    - Synchronous conflict detection (with locks)? No, multi-leader aims to allow replicas accept writes independently.
+    - Conflict avoidance: writes to the same piece of data is always handled by one leader. Not always possible. Also, sometimes you might want to change the designated leader (if one datacenter failed).
+    - Let the application handle the conflict.
+
+- Leaderless replication
+
+  - Fashion started by Amazon's DynamoDB, calle *Dynamo-style*.
+
+  - Usually, the client sends reads/writes to **several replicas**, or some coordinator does this for the client. 
+
+  - If the client sends writes to all replicas, but some are rebooting, those replicas miss the writes. If the client reads from those replicas, it can get stale data. To solve the problem, reads are **also** sent to multiple replicas. Version numbers are used to determine which values are fresher.
+
+  - Two approaches to make temporarily-unavailable nodes catch up:
+
+    - Read repair: When reading from several replicas in parallel, use fresh data to overwrite stale data.
+    - Anti-entropy: Have a background process that constantly scans replicas and copies missing data.
+
+    The read-repair works well for frequently read data. Dynamo-style datastores without anti-entropy process has reduced durability, since some data are not replicated (until read-repair happens at read).
+
+  - Quorums for reads and writes
+
+    - Requirement: `r + w > n`
+    - `r`/ `w` can be increased to favor write/read
+    - With smaller `r` , `w` (e.g. `r + w <= n`), more likely to read stale data, but better fault-tolerance, higher performance
+    - Even with `r + w > n`, may read stale data. Refer to page 181 for details.
+    - Dynamo-style datastores only provide eventual consistency
+
+  - Detecting concurrent writes
+
+    - In leaderless replication, nodes accept writes concurrently. However, write events can arrive at different nodes in different orders. If those writes are not handled carefully, we don't even have eventual consistency.
+
+    - Last write wins (LWW): as each key corresponds to only one value, we only need the last write. However, for concurrent writes, the order is undefined. It's possible for force some arbritary order on concurrent writes and discard all writes except the last one. LWW achieves eventual consistency but compromises durability promise. When there're concurrent writes, though all reported successful to the client, only one will survive while others will be silently discarded. In short, the problem with LWW is data loss.
+
+    - Concurrent: if two writes are not aware of each other, they can be considered as concurrent. 
+
+    - For two operations A and B, there're 3 possibilities: A happened before B, B happened before A, or A and B are concurrent. We need an algorithm to **detect if two writes are concurrent**. If we have such an algorithm, we can overwrite earlier writes with later ones; For concurrent writes, we need conflict resolution. We don't lose data.
+
+    - One algorithm for detecting concurrent writes, as described in page 188. 
+
+      ```
+      Server maintains a version number for every key, increments the version number for every write, and store the version number with the value;
+      When client reads a key, server returns all values that haven't been overwritten, as well as the latest version number; A client must read a key before writing;
+      When a client writes a key, it must include the version number from previous read, and must merge together all values that it received in the previous read;
+      When the server receives a write with a particular version number, it can overwrite all values with that version number all below, but must keep all values with a higher version number (this are concurrent writes with the incoming write).
+      ```
+
+      Python pesudo-code:
+
+      ```python
+      # Suppose the client and server pre-agreed on what key to write, i.e., we only have a single key.
+      
+      class Client:
+      	def __init__(self):
+          # Client class for writing to one key
+      		self.val = None
+          self.version = -1
+      
+        def write():
+          val_list, server_assigned_version = server.handle_write(self.val, self.version)
+          self.val = merge_vals(val_list)
+          self.version = server_assigned_version
+      
+      
+      class Server:
+        def __init__(self):
+         	self.val_list = [] # Suppose version starts from 0
+          
+        def handle_write(self, val, overwritten_version):
+          if len(self.val_list) == 0: 
+            # The first write to the value
+            self.val_list.append(val)
+            return [val], 0
+          else:
+            # Later writes to the value
+            if len(self.val_list)-1 == overwritten_version:
+              # No concurrent writes, overwritten_version is the latest write.
+              self.val_list.append(val)
+              return [val], overwritten_version+1
+            else:
+              # Other writes that current write is unaware of
+              self.val_list.append(val)
+          		concurrent_vals = self.val_list[overwritten_version+1:]
+              return concurrent_vals, len(self.val_list)-1
+      ```
+
+      This algorithm ensure that no data is silently dropped (unlike LWW), but requires client to merge concurrent writes. Consider this as a shopping cart. If the clients only add items, thenm `merge_vals` can just take the union. However, to support deletion, *tombstones* must be used. 
+
+      This operation is usually called *merging siblings*. Merging siblings in application code can be error-prone and complex. There are approaches to make this easier: Conflict-free replicated datatypes (CRDTs), Mergeable persistent data structures, operational transformations.
+
+    - Version vector
+
+      The above example has only one server/replica, so only one version number. When there're multiple replicas, we need one version number *per replica*. Each replica increments its own version number when processing a write, and also keeps track of the version numbers it has seen. This collection of version numbers from all replicas is called a *version vector*. It's simply to the algorithm above.
 
 ## Part III. Derived Data
 
