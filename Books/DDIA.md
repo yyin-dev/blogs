@@ -310,7 +310,109 @@ For scalability, fault-tolerance and latency, you need distributed systems.
 
       The above example has only one server/replica, so only one version number. When there're multiple replicas, we need one version number *per replica*. Each replica increments its own version number when processing a write, and also keeps track of the version numbers it has seen. This collection of version numbers from all replicas is called a *version vector*. It's simply to the algorithm above.
 
-## Part III. Derived Data
+
+
+### Chapter 6. Partitions
+
+Partitionings = Sharding. Each record belongs to only one partition.
+
+Outline: Partitioning large datasets, data indexing with partitions, rebalancing, database request routing
+
+#### Partition and Replication
+
+Partition and replication are usually combined. Each record belows to only one partiiton, but can be replicated on multiple replicas. A node may store multiple partitions. Each node maybe the the leaders for some partitions and followers for other partitions.
+
+#### Partitoning Key-Value Data
+
+- Potential problem: skewed partitions, hot spot
+- Possible key distribution schemes
+  - Random distribution. 
+    - Pro: Avoid hot spots. 
+    - Con: When query a record, you have to query all nodes since there's no order.
+  - Partitioning by key range.
+    - Mechanism: Key ranges might not be evenly spaced, as the data might not be evenly distributed.The partition boundaries can be manually configured, or automatically chosen by the database. In each partition, keys are sorted.
+    - Pro: easy range scans; efficient query within one partition (as data is sorted)
+    - Con: certain access patterns lead to hot spots. For example, if we are appending monotonically-increasing keys, the latest partition becomes the hot spot.
+  - Partitioning by key hash
+    - Mechanism: each partition gets a range of hash values (instead of key values). 
+    - Pro: avoid hot spot and skewed data
+    - Con: cannot do range query
+  - Compromise bewteen key and hashed-key
+    - Cassandra provides *compound primary key*, consisting of several columns. One the first column is hashed to determine the partition, while remaining columns are used as a concatenated index for sorting data.
+    - A query cannot use the first column for range query. However, if it specify a fixed value for the first column, it can perform efficient range query over the remaining columns.
+    - This design can fit into the user case of many applications.
+- Skewed workloads and relieving hot spots
+  - Hashing doesn't avoid hot spot entirely. In the extreme case, one extremely hot key becomes the hot spot.
+  - Solution: for a known **hot** key, add a random suffix/prefix, so that the hashed value is distributed. Different partitions can handle reads/writes in parallel. Two costs: (1) either concurrent writes on different partitions are handled by conflict resolution algorithm; (2) or each read must query all partitions and combine the results.
+  - The above technique should be used only for hot keys. For majority of keys with low throughput, this is inefficient.
+
+#### Partitioning and Secondary Index
+
+- document-based partitioning (aka *local index*)
+  - Mechanism: each partition maintains its own secondary index, covering only the documents in that partition.
+  - Pro: easy to keep the secondary index in sync with the data
+  - Con: query using the secondary index requires scatter-and-gather. You need to query all partitions.
+- term-based partitioning (aka *global index*)
+  - We need a global index that covers all data, but it must also be partitioned: otherwise the index itself can be the bottleneck.
+  - Mechanism: the index is partitioned by the *term* (column name in relational model). The index can be distributed by either the term itself, or a hash of the term. Partitioning by term enables range scans, where partitioning on a hash reduces hot spots.
+  - Pro: avoids scatter-and-gather in document-based index.
+  - Con: writes are more complicated. One write to a single document may affect multiple partitions of the index. This may require distributed transaction or asynchronous updates.
+
+#### Rebalancing Partitions
+
+- Rebalancing: adding/removing hardware. 
+- Requirements:
+  - Load fairly distributed
+  - While rebalancing is happening, the database should continue functioning
+  - For efficiency, minimum data should be moved bewteen nodes
+- Strategies
+  - Hash mod N
+    - Problem: when N changes, most of the keys must be moved.
+  - Fixed number of partitions: create many more partitions than nodes and assign several partitions to each node. When new nodes join, it steal a few partitions from each existing node. When a node is removed, the reverse happens. 
+    - Mechanism: number of partitions is not changedl; the assignment of keys to partitions is not changed; only the assignment of partitions to nodes change.
+    - Number of partitions is fixed when the database is created (as splitting/merging partitions is complicated). Choosing the right number of partitions is difficult: it should be large to allow more machines to join; it should be small to avoid the overhead. This is even harder when the dataset size is highly variable.
+    - Also, when the dataset grows unexpectedly large, each partition could be very large.
+  - Dynamic partitioning (fixed partition size): when a partition grows to exceed the configured size, it's split into two partitions; when a partition shrinks below some theshold, it's merged with an adjacent partition. 
+    - Mechanism: the size of each partition is in a configured range, and the number of partitions adapt to the data volume.
+  - Partitioning proportionally to nodes (fixed number of partitions per node): make the number of partitions proportional to the number of nodes. 
+    - Mechanism: when a new node joins, it randomly chooses a fixed number of existing partitions to split, and takes ownership of one half of each split partitions, leaving the other half in place.
+
+#### Request Routing
+
+- Problem: how to route client request to node?
+
+- An instance of a more general problem called *service discovery*
+
+- Approaches
+
+  - Allow clients to contact any node. The contacted node serves data if it can, otherwise forwards request to the approriate node, receives the reply, and passes reply back to client
+  - Send all client requests to a routing tier, which determines the node to be contacted, and forward the request accordingly. This routing tier acts as a partition-aware load balancer.
+  - Require that clients be aware of the partitioning and the asignment of partitions.
+
+  The key problem is the same: how does the decision-making component discover changes in partition?
+
+  Typically two ways:
+
+  - A separate coordination service like ZooKeeper
+  - *gossip protocol* among nodes to disseminate changes in the cluster state
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
