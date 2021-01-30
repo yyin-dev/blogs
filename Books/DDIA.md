@@ -619,6 +619,56 @@ Serializable isolation is the strongest isolation level. It guarantees that even
 
 ### Chapter 8. The Trouble with Distributed Systems
 
+A pessimistic overview of possible problems in distributed systems: network, clocks, how to reason about them.
+
+#### Faults and Partial Failures
+
+- The fundamental difference between a distributed system and a single computer is the presence of partial failures.
+- Two ways to build large-scale computing systems: Supercomputing vs Cloud Computing.
+
+#### Unreliable network
+
+- After sending a request and expecting a response, many things can go wrong: the packe is lost; the packet is queued; the remote has crashed; the remote is under high load and temporarily unresponsive; the remote processed the requst but crashed before responding; the response is sent but delayed. The above issues are indistinguishable in an unreliable network. 
+- Detecting faulty nodes is difficult in the unreliable network. To ensure a request was successful, you need a response from the node. But when you don't receive any response, you don't know what happened.
+- Synchronous vs Asynchronous network; circuit-switched vs packet-switched.
+
+#### Unreliable clocks
+
+- Modern computers have two kinds of clocks: a *time-of-day clock* and a *monotonic clock*. A time-of-day clock returns current date and time and can be synchronized with the Network Time Protocol (NTP) servers. However, it is not monotonic and can jump back in time, so it's not suitable for measuring elapsed time. A monotonic clock is suitable for measuring elapsed time, but its absolute value is meaningless. It doesn't make sense to compare monotonic clock values from different computers, or even different CPUs on the same machine.
+- Clock synchronization through NTP is usually inaccurate, unless you invest money.
+- Relying on synchronized clocks can be dangerous
+  - Timestamps for ordering events and conflict resolution using LWW. Problem: a clock that's too fast/slow cause problem; the clock has only millisecond resolution and can generate the same timestamp for multiple events.
+  - Even if the clock have microsend/nanasecond resolution, the value might not be accurate. Clock readings have a confidence interval, which is not exposed by most systems. An exception is Google's TrueTime API in Spanner.
+  - Generating monotonically increasing transaction ID for snapshot isolation in distributed system is hard. 
+- Process Pause
+  - GC, virtual machine migration, OS context-switch, disk I/O can be reasons for a thread to be paused for a long time. Thus, you cannot assume anything about timing of execution. A node in a distributed system must assume that its execution can be paused for a significant amount of time at any point. During the pause, the rest of world keeps moving and may declare the paused node as dead.
+  - The reasons for pausing can be eliminated in *hard real-time systems*, but generally not for efficiency. 
+
+#### Knowledge, Truth, and Lies
+
+- A node cannot trust its own judgement. Many distributed systems rely on a *quorum*. Example: leader election with fencing token.
+
+- Byzantine faults: malicious nodes.
+
+- System model and reality
+
+  - Timing assumptions
+    - Synchronous model: bounded network delay, bounded process pausing, bounded clock error. Not very realistic.
+    - Partially synchronous model: the system behaves like a synchronous model mostly, but sometimes exceeds the bounds. This is a realistic model for many systems.
+    - Asynchronous model: no timing assumptions. Very restrictive.
+  - Failure modes
+    - Crash-stop fault: a node fail by crashing.
+    - Crash-recovery fault: a node can crash and recover. Nodes are assumed to have persistent storage but volatile memory.
+    - Byzantine faults: any arbritary fault.
+
+  Generally, the partially synchronous world with crash-recovery faults is the most userful model.
+
+- Correctness
+
+- Safety and liveness
+
+
+
 ### Chapter 9. Consistency and Consensus
 
 
