@@ -51,7 +51,7 @@ Data-intensive vs. compute-intensive.
     - Edge = unique ID + outgoing edges + incoming edges + properties
     - Vertex = unique ID + starting edge + ending edge + properties
     - Vertices represent entities, while edges represent relationships between entities
-  - By giving vertices different lables, you can model different kinds of information
+  - By giving vertices different labels, you can model different kinds of information
   - High evolvability and high flexibility
 
 - Query language
@@ -686,7 +686,7 @@ Distributed consistency models are different from the hierarchy of transaction i
   - For concurrent events, the readers should never see a value flip back.
   - Linearizability and seriazability
     - Seriazability is an isolation property of transactions. It guraantess that transaction behave as if they had executed serially. **It's ok for serial order to be different from the order in which transactions were actually run**.
-    - Linearizability is a recency guarantee. It doesn't grou`p operations into transactions, so it doesn't prevent problems like write skew, unless the application takes additional measures.
+    - Linearizability is a recency guarantee. It doesn't group operations into transactions, so it doesn't prevent problems like write skew, unless the application takes additional measures.
     - Implementations of serializability based on 2PL or actual serial execution are typically linearizable. However, SSI is not.
 - Implementing Linearizable Systems
   - To make the system linearizable and fault-tolerant, replication is used.
@@ -779,6 +779,86 @@ ZooKeeper and etcd can be used for many cases: work allocation, service discover
 
 
 ## Part III. Derived Data
+
+There's no database that suits all needs. Integrating multiple data systems, with different data models and optimized for different access patterns, into one coherent application structure is hard.
+
+Depending on the property of the data stored, data systems can be grouped into two categories. (1) A *system of record* holds the authoritative version of the data. When new data arrives, it's first written here. Each fact is represented exactly once. If there's any discrepancy between another system and the system of record, the value in the system of record viewed as is the correct one. (2) Derived data systems store data derived from data in system of record. Derived data is *redundant* and *denormalized*.
+
+It's helpful to make clear distinction between systems of record and derived data systems, as it clarifies the dataflow. Note that databases are not inherently a system of record or a derived system. A database is just a tool: the distinction depends on the usage.
+
+
+
+### Chapter 10. Batch Processing
+
+Three types of systems. (1) Services (online systems); (2) Batch processing systems (offline systems); (3) Stream processing systems (near-real-time systems).
+
+#### Batch processing with Unix tools
+
+Unix design principles:
+
+- Inputs are immutable; outputs are intended to become the input to anther (as yet unknown) program
+- Complex problems are solved by composing small tools that "do one thing well"
+
+In Unix, all program uses the same uniform interface - a file (a file descriptor, more precisely). Each Unix program use `stdin` for input and `stdout` for output, but can be pointed to other file descriptors. This separates logic and data wiring. 
+
+#### MapReduce and Distributed File Systems
+
+- HDFS (Hadoop Distributed File System): the open source implementation of GFS. *Namenode* and *datanode*. Replication.
+
+- MapReduce basics
+
+- Reduce-Side Joins and Grouping
+
+  Consider the case for star schema, where a fact table stores user browsing activities (each URL is tagged with a user ID) and a dimension table for user information (user ID and birth date). We want to find the relationship between URLs and ages.
+
+  A Reduce job needs to do a join between user activity and user information by userID. The simplest implementation is to go over the fact table events one by one, and querying the dimension table. This is slow due to the network I/O.
+
+  For good throughput, the computation should try to be local. A better approach is to store a copy of the data of user information in the same distributed filesystems where the fact table is stored.
+
+  - sort-merge joins
+
+    To do the join on userID, one set of mappers go over the browsing activities, emitting `<userID, URL>`; another set of mappers go over the user information, emitting `<userID, birthDate>`. When the MapReduce partitions the mapper output by key and sorts the key-value pairs, all activity events and the birth date with the same userID become adjacent in the reducer input. Then, reducer's logic is easy. This algorithm is called *sort-merge join*. MapReduce sorts mapper output, and the reducers merge the sorted lists. 
+
+    Note: this looks strange at first look, how to have two set of mappers in one MapReduce job? Actually, this is easy. The input to mappers are `(fileName, "")`, and mappers can use the format the file name to determine if it should read browsing activity data or user information data. The remaining steps (shuffling, sorting) are the same as any other MapReduce jobs.
+
+  - GROUP BY can be implemented similarly to joins, based on the same idea of "bringing related data in one place".
+
+  The join logic is performed by the reducers, so the algorithm is called *reduce-side join*s.
+
+- Map-side joins
+
+  Reduce-side joins can be expensive because of sorting, copying data to reducers, and merging reducer inputs. It's possible to do map-side joins with a cut-down MapReduce job in which there's no reducers and no sorting, if you can make certain assumptions about the input data.
+
+  - If one dataset is small enough, each mapper can build a in-memory hashtable and do the join directly. This is called *broadcast hash joins*: each mapper for a partition of the large input reads the entirety of the small input in-memory (so the small input is "broadcast" to all mappers), and the word *hash* reflects the user of a hash table.
+  - If the inputs to the map-side joins are partitioned in the same way (for example, both partitioned by `userID`), then partition-wise hash join can be applied. This approach, called *partitioned hash join*, only works if both inputs have the same number of partitions, with records assigned to partitions based on the same key and the same hash function.
+
+  When the output of a MapReduce join is consumed by downstream jobs, the choice of map-side or reduce-side join affects the structure of the output.
+
+- The output of batch overflows
+
+  Batch workflow is different from OLTP or OLAP. OLTP outputs a small output of information to user, OLAP outputs often have the form of a report, but the output of a batch process is different from both. Examples: using MapReduce to build an inverted file index; machine learning systems or recommendation systems use batch processing and output key-value stores, to be queried by other services.
+
+- Comparing Hadoop to Distributed Databases
+
+  - Data is stored as unstructured bytes in HDFS, whereas databases typically require schema. HDFS is more flexible.
+  - MapReduce can be more expressive than SQL queries (but people still find it not expressive enough).
+  - MapReduce is designed for frequent faults due to Google's usage (many disk writes).
+
+#### Beyond MapReduce
+
+Map must read from files, and Reduce must write to files. In a workflow with many MapReduce jobs, many intermediate files are produced. The process of writing out intermediate state to files is called *materialization*. Downsides: (1) no stream processing; (2) higher space usage. Note that Unix uses stream processing instead of materialization.
+
+Other dataflow engines handle an entire workflow as one job, rather than breaking it up into independent subjobs. They provide more flexible *operators* and make higher use of memory. 
+
+
+
+### Chapter 11. Stream Processing
+
+
+
+### Chapter 12. The Future of Data Systems
+
+
 
 
 
