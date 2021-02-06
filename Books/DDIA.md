@@ -1024,13 +1024,110 @@ Outline: *event streams*; how streams are represented, stored, and transmitted; 
 
 ### Chapter 12. The Future of Data Systems
 
+This chapter is the author's thoughts about the future of data systems.
+
+#### Data integration
+
+- Dataflow 
+  It's likely that the application needs to integrate different data systems for different workload, with derived data. It's important to be clear about the dataflow - the inputs and outputs. For example, if there's only one system of record, then it's easy to order all writes. However, if multiple sources can modify data concurrently, you might need to fix conflicts.
+
+- Derived data and distributed transaction
+
+  At a high level, derived data achieves similar goals as distributed transactions, with different means. Distributed transaction orders writes using locks, while CDC and event sourcing use a log for ordering; Distributed transaction use atomic commit to make a change happen exactly once, while log-based systems use retry and idempotence. The difference is that distributed transaction provides linearizability, which implies useful guarantees like read-you-writes, while derived data systems are usually updated asynchronously.
+
+- Ordering events
+
+  Total order is easy to achieve in a small system, where all events can be handled by a single node. However, for systems whose events cannot be handled by a single node, or geographically distributed, or having multiple sources that can generate events, it's hard to generate total order. Formally, deciding a total order is equivalent to *total order broadcast*, which is equivalent to *consensus*. Most consensus algorithms are designed to have all events going through a single node. Ordering events to capture causal dependency is even harder.
+
+- Batch and stream processing
+
+  Derived views allow gradual evolution. To restructure the dataset, you don't perform the migration as a sudden switch. Instead, you can maintain the old schema and the new schema side-by-side as two independently derived views onto the same underlying data. You can then start shifting a small number of users to the new view to test its functionality and performance. Gradually, you increase the proportion of users accessing the new view, and eventually drop the old view.
+
+- Lambda architecture
+
+  Unify batch processing with stream processing. Doesn't look very interesting.
 
 
 
+#### Unbundling database
+
+- Database operations and derived data systems
+
+  There are similarities between the internal operations of a database, and the operations in derived data systems. Creating a database index is similar to creating a dervied view. Scan over a initial snapshot of the original data, and then process the backlogs of all writes happening after the index/view is created, to keep the index/view in sync with the original data. In fact, a derived view can be considered as a index of the underlying data. From this perspective, managing derived data systems in the entire organization is similar to maintaining index/materialized views in a huge database.
+
+  This leads to two directions: unifying reads, and unifying writes. The idea of unifying reads is for a system integrated from multiple storage engines to provide a single read interface. The idea of unifying writes is for a system integrated from multiple storage engines to provide a single write interface, and ensuring that changes are applied to all storages correctly.
+
+- Unbundling database
+
+  Unifying writes is also called *unbundling database*, which tries to unbundle a database's index-maintainenance features in a way that can synchronize writes across different technologies. Two main directions: distributed transaction and event-log with idempotent writes. The second option is more promising.
+
+  The goal of unbundling (having multiple storages) is not to compete with individual database on particular workload. The goal is to get good performance on a *wider* range of workloads. The goal is breadth, instead of depth.
+
+- Designing application around dataflow
+
+  The dataflow here refers to the situation where the derived views are notified when the system of record changes (the change *flows* to the derived views). Excel has this ability - after speicifying the formula and the data source, the derived data is automatically updated once the source changes. 
+
+  Instead of periodically polling the database to see if there's any change, applications can suscribe to the database changes through a changelog or a messaging system. 
+
+- Observing derived states
+
+  At an abstract level, the dataflow is the process to create derived datasets and keep them up to date. This is the *write path*. Serving a read request using the derived dataset is the *read path*. The write path and the read path encompass the whole journey of data, from the point where it is collected to where it is consumed.
+
+  The derived dataset is where the write path and the read path meet. It's a trade-off between the amount of work for write and the amont of work for read.
+
+  This idea can be extended. Example: Facebook React suscribe to a data source; server pushing updates to client device, etc.
 
 
 
+#### Aiming for correctness
 
+It's hard to make distributed data systems correct. This section is about correctness in the dataflow architectures.
+
+- The end-to-end argument
+
+  Typically idempotence is needed to achieve exactly-once delivery. 
+
+  Consider the case of a user request, that needs to be processed as a transaction. TCP suppresses duplicate within one connection. Suppose the server starts a connection to tell the database to execute the transaction. If the network is unstable and the server starts another connection, TCP cannot help in this case. Two-phase commit removes the constraint of a single connection, but it's still not enough to ensure that the transaction will be executed only once. The client might retry the operation. The point is that to make operations idempotent across several hops of network communication, the transaction mechanism provided by the database is not enough. You generate a unique identifier to be included in all messages (user requst, event log, database request, etc).
+
+  The *end-to-end argument* is the idea that a piece of information is passed all the way from the start to the end. However, in this design, the application code must be aware of this end-to-end solution. It will be nice if a system could provide such abstraction. Transactions are an important abstraction, but don't help much in this case.
+
+- Enforcing constraints
+
+  Consider the uniqueness constraint. We know uniqueness guarantee requires consensus, where all requests go though a single node that mades the decision. This can be scaled out by partitioning based on the value that needs to be unique. 
+
+  Log-based messaging provides uniqueness. The log ensures that all consumers see messages in the same order.
+
+- Timeliness and Integrity
+
+  In simple words, violations of timeliness are eventual consistency, while violations of integrity are perpetual inconsistency. ACID provides timeliness and integrity together, while in event-based dataflow systems, timeliness and integrity are decoupled. When processing event streams asynchronously, there's no timeliness guarantee, but integrity is always preserved. The combination of mechanisms include:
+
+  - Representing the content of the write operation as a single, self-contained message, which can be written atomically.
+  - Deriving all other state updates from that single message using deterministic functions.
+  - Passing a client-generated request ID through all levels of processing, enabling end-to-end duplicate suppression and idempotentce.
+  - Making messages immutable and allowing derived data to be reprocessed, making it easier to recover from bugs.
+
+- Loosely interpreted constraint
+
+  Many applications can get away with temporarily violated integrity. This depends on the business logic.
+
+- Coordination-avoiding data systems
+
+  Two interesting observations so far:
+
+  - Dataflow systems can maintain integrity guarantees on derived data without atomic commit, linearizability, or synchronous cross-partition coordination.
+  - Though strict uniqueness guarantee require timeliness and coordinatino, many applications are fine with loose constraints.
+
+
+
+#### Trust, but Verify
+
+Everything can fail, with some probability. It's important to do periodic checks and design for auditability.
+
+
+
+#### Doing the Right Thing
+
+Ethical issues are too important to be ignored by engineers.
 
 
 
