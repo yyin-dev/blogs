@@ -1,0 +1,22 @@
+
+Sym Table
+{}
+
+
+Sym Table
+{ddd=double}
+{ccc=void}
+{aaa=bool, bbb=int}
+
+
+Sym Table
+{ccc=void}
+{aaa=bool, bbb=int}
+
+
+Sym Table
+{aaa=bool, bbb=int}
+
+
+Sym Table
+

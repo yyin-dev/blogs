@@ -1,6 +1,10 @@
 **/.vscode/
 **/.DS_Store
 
+# Ignore large files
+**/CppPrimer.pdf
+**/DatabaseSystemConcepts6thedition.pdf
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

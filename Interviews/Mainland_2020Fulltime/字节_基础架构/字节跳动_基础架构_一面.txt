@@ -1,0 +1,69 @@
+网络
+- 简述一下MAC地址。局域网中的A和B两台机器，如何通信？描述一个packet传输的过程。答：通过switch。每个switch学习并维持一个<MAC, next hop>的表。如果表中找到对应的entry，则只向那个端口传输。否则，向剩余端口broadcast。
+- TCP是怎么做到可靠传输的呢？简单描述一下。答：简单stop-and-wait损失性能，sliding window充分利用带宽。通过ACK + buffer的方法来做到可靠传输。为了性能，还有流量控制，阻塞控制等机制。
+- TCP中的TIME_WAIT状态是什么？什么时候会发生？如果一段时间服务器很多端口出现TIME_WAIT, 是出现了什么问题？答：TIME_WAIT状态是指收到对方发送的FIN并且已经回复ACK之后，还需要等待两分钟才能回收当前的端口，内存等资源用于其他连接。目的是为了确保ACK有成功到达对方，如果没有的话，有可能错误的结束下一个连接（具体见笔记）。如果同一时间段很多端口出现TIME_WAIT，说明有很多机器在这个时候想要断开连接（这个是我没有考虑应用层得到的结论），我不觉得有什么异常，而且认为确实可能发生。面试官说要从应用层考虑，我说我不熟应用层。他说那这种情况可能有什么问题，我说每个连接都要占用资源，如端口，内存等。面试官说可以了。
+- 简历上写了CSAPP的proxy lab？那个是短连接还是长连接？答：不懂。我解释了一下proxy lab的侧重点，以及并发连接的主要目的，并不在网络方面。面试官说ok。
+
+操作系统
+- 简历上写了实现进程调度。描述一下上下文切换(context switch)。答：进程/线程在操作系统看来就是一些数据结构，如stack pointer, register set, page table等等。操作系统在切换线程或者进程的时候，主要做的就是存储/恢复这些状态。
+- 进程和线程的区别？为什么进程的切换比线程的切换更expensive? 比较简单，不写了。
+- 你刚才说进程就是操作系统维持的状态？OS为每个进程存储了哪些？答：运行状态，stack pointer, register set, page table, file descriptor table, parent process等等。
+- 解释一下孤儿进程？比较简单，不写了。
+- 描述一下软链接和硬链接的区别？
+- 除了buddy system之外，了解slab嘛？Buddy system我都不懂，懂个锤子slab。
+
+算法题
+- 第一题：二叉树的左视图
+- 第二题：判断二叉树是否对称
+都是Leetcode中的原题，所以基本几分钟就写出来了。这一面还是比较轻松的。
+
+
+#include <iostream>
+using namespace std;
+
+class TreeNode {
+public:
+    TreeNode *left;
+    TreeNode *right;
+    int val;
+}
+
+// Question1: 二叉树的左视图
+vector<int> leftView(TreeNode *root) {
+    if (!root) return {};
+    
+    vector<int> res;
+    queue<TreeNode*> q({root});
+    while (!q.empty()) {
+        res.push_back(q.front()->val);
+        
+        int len = q.size();
+        for (int i = 0; i < len; i++) {
+            TreeNode *node = q.front();
+            q.pop();
+            
+            if (node->left) q.push(node->left);
+            if (node->right) q.push(node->right);
+        }
+    }
+    return res;
+}
+
+// Question2: 判断一棵二叉树是不是对称
+bool isSymmetric(TreeNode* root) {
+    if (!root) return true;
+    return helper(root->left, root->right);
+}
+
+bool helper(TreeNode *node1, TreeNode* node2) {
+    if (!node1 && !node2) return true; // both NULL
+    if (!node1 || !node2) return false;
+    
+    // both node1 and node2 exists
+    if (node1->val != node2->val) return false;
+    
+    return helper(node1->left, node2->right) && helper(node1->right, node2->left);
+}
+
+其他
+- 有什么要问的吗？团队的工作，团队的大小。

@@ -1,0 +1,7 @@
+"This file tests vary bad strings: unterminated and with bad escape \:
+"very bad string \___
+"bad escaped character: \a AND not terminated
+"Ticky string, escape a newline character \
+"another very bad string \...
+"bad escaped character: \B AND not terminated
+"very bad string \s and end of line (eof)

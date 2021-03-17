@@ -1,0 +1,125 @@
+// Test same name in different scopes
+int foo;
+struct sturctWithFoo {
+    int foo;
+};
+void funcWithFooInParam(int foo) {}
+bool funcWithFooInBody(int bar) {
+    int foo;
+    struct sturctWithFoo swf;
+    swf.foo = 1;
+}
+
+// Test var declaration
+void testBasicVarDecl() {
+    int a;
+    int b;
+    bool c;
+}
+
+// Test bad struct access
+// Test struct definition
+int usedName;
+struct testStructDecl{
+    int usedName;
+};
+
+// Test IdNode link to symbol table
+struct Point {
+    int x;
+    int y;
+};
+int f(int x, bool b) { }
+void g() {
+    int a;
+    bool b;
+    struct Point p;
+    p.x = a;
+    b = a == 3;
+    f(a + p.y*2, b);
+    g();
+}
+
+// Test nested struct access
+struct Inner {
+    int i;
+};
+
+struct Outer {
+    struct Inner inner;
+};
+
+void testNestedStructAccess() {
+    struct Outer outer;
+    outer.inner.i = 1;
+}
+
+// Variable in struct can have the same name as variable/function outside
+void declaredOutside() {}
+int anotherOutside;
+struct S {
+    int declaredOutside;
+    bool anotherOutside;
+};
+
+// The name of the struct is in a scope that is one level outside the scope 
+// of the struct itself. Thus, a struct and one of its members can have the 
+// same name.
+// SymTable for SameNameAsMember should be: {SameNameAsMember=int}
+struct SameNameAsMember {
+    int SameNameAsMember; 
+};
+
+// The name of a struct can be the same as a field in another struct declared
+// previously.
+struct S1 {
+    int usedName2;    
+};
+struct usedName2 {
+    int foo;      
+};
+
+// A function and one of its formals/local variables can have the same name.
+int valid(int valid) {}
+int stillValid() {
+    int stillValid;
+}
+
+
+// if/else/while
+// Reuse name in if/else
+int reuseNameInIfElse() {
+    int a;
+    if (true) {
+        int a;
+        int f;
+        if (f) {
+            bool f;
+            f = true;
+        } else {
+            bool f;
+        }
+    } else {
+        bool a;
+    }
+}
+
+// Reuse name in while
+void reuseNameInWhile() {
+    while (true) {
+        bool reuseNameInWhile;
+        if (true) {
+            int reuseNameInWhile;
+        }
+    }
+}
+
+// Reuse name in repeat
+void reuseNameInRepeat() {
+    while (true) {
+        bool reuseNameInRepeat;
+        if (true) {
+            int reuseNameInRepeat;
+        }
+    }
+}

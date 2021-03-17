@@ -1,6 +1,0 @@
-"This file only tests unterminated strings without bad escape
-"unterminated
-"unterminated with good escape \n\t\'\"\?\\
-"another unterminated \"
-"yet another unterminated \"
-"unterminated string (eof)

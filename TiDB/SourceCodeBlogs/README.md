@@ -1,0 +1,1 @@
+My note when reading TiDB source code, when following this [blog series](https://pingcap.com/blog-cn/#TiDB-%e6%ba%90%e7%a0%81%e9%98%85%e8%af%bb).

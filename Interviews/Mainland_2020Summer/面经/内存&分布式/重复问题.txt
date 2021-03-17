@@ -1,0 +1,43 @@
+https://blog.csdn.net/juzihongle1/article/details/70212243
+
+# a、b两个文件，各存放50亿个url，每个url占64字节，内存限制是4G，找出a、b文件中
+相同的url？
+
+每个文件大小为 64 * 50 * 10^8 = 64 * 5 * 10 ^ 9 = 64 * 5 * 2 ^ 30 = 320 GB.
+1. 遍历a文件，对每个url求hash(url) % 1000，每个文件大小约为: 300MB。对b采取
+同样操作。注意两组文件中，只有相同编号的小文件才有可能含有相同元素。
+2. 将a_1文件中的url存入hash_set，遍历b_1中文件，找出重复。以此类推。
+
+# 2.5亿个整数中找出不重复的整数，内存不足以容纳这2.5亿个整数。
+思路1：2-bitmap。虽然本题不适用，但是思路很新奇。
+思路2: hash分割 + 对每一个小文件用hashset。
+
+# 40亿个整数，找出不包含的一个整数。分别用1GB内存和10MB内存处理。
+## 1GB:
+1-bitmap，需要0.5GB内存。
+## 10MB:
+40亿 = 4G个，32-bit整数总共有2 ^ 32 = 4G个。
+将所有整数分段，每段的大小要可以存入内存。10 MB = 10 * 2 ^ 20, 可以存储
+10 * 2 ^ 20 / 2 ^ 2 = 10 * 2 ^ 18 > 2 ^ 20 个数字。因此每一段的大小设
+为2 ^ 20个数字。
+每一段对应一个文件，遍历40亿个数字并分别填入相应文件中。然后对每一个
+小文件使用1-bitmap。
+
+注意：这道题使用了分割但是并不是使用hash分割而是分割数字段。很明显hash
+分割不适合这道题因为数据中的重复并不多。因此，当重复多时，才考虑用hash
+分割。其他情况下，考虑分割数字段。
+
+# 10亿个URL，每个URL对应一个非常大的网页，怎样检测重复的网页？
+不同url可能对应相同的网页，所以需要对网页内容求hash比较。
+10亿/1G个url + hash远超过单机内存。
+方法：
+1. 按照hash值将url&hash分到1000个小文件中，指向相同网页的url必定在同一个file中
+2. 对小文件使用hashset.
+
+# 10个1GB大小的文件，每一行一个query，query可能重复。按照query的频度排序。
+方法：hash分割成100个文件 + mapReduce
+
+# N machines, each storing N numbers. Each machine can store at most
+O(N) numbers. How to find the k-th largest number?
+Solution: distributed quickSelect. 
+https://sites.google.com/site/mywaydevilsway/calculate-median-in-distributed-system

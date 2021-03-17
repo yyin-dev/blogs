@@ -1,0 +1,435 @@
+// int testOffsetCalculation(int param1, int param2) {
+//     int a;
+//     int b;
+//     bool c;
+//     if (c) {
+//         int d;
+//         if (c) {
+//             int e;
+//             bool f;
+//             while (c) {
+//                 int g;
+//                 bool h;
+//                 c = (f && h);
+//             }
+//         }
+//         else {
+//             int i;
+//         }
+//     }
+//     else {
+//         bool j;
+//     }
+// }
+
+// int testArgAndReturnCallee(int a, int b) {
+//     cout << "f called! Arguments: ";
+//     cout << a;
+//     cout << ", ";
+//     cout << b;
+//     cout << "\n";
+
+//     return 42;
+//     return 43;
+// }
+
+// void testArgAndReturnCaller() {
+//     int a;
+//     a = testArgAndReturnCallee(1, 2);
+//     cout << "f(1, 2) returns: ";
+//     cout << a;
+//     cout << "\n";
+// }
+
+// void testWrite() {
+//     int a;
+//     int b;
+//     bool c;
+//     bool d;
+
+//     // write int
+//     a = 1;
+//     b = 3;
+//     cout << a;
+//     cout << "\n";
+
+//     a = b;
+//     cout << a;
+//     cout << "\n";
+
+//     cout << 2;
+//     cout << "\n";
+
+//     // write bool
+//     c = true;
+//     d = false;
+//     cout << c;
+//     cout << "\n";
+//     cout << d;
+//     cout << "\n";
+
+//     // write string
+//     cout << "hello world!\n";
+// }
+
+// int m;
+
+// void testRead() {
+//     int a;
+//     bool b;
+
+//     // read int
+//     cout << "Try to read into a(int):";
+//     cout << "\n";
+//     cin >> a;
+//     cout << "a's new value: ";
+//     cout << a;
+//     cout << "\n";
+
+//     // read bool
+//     cout << "Try to read into b(bool):";
+//     cout << "\n";
+//     cin >> b;
+//     cout << "b's new value: ";
+//     cout << b;
+//     cout << "\n";
+
+//     // read global
+//     cout << "Try to read into m(global int):";
+//     cout << "\n";
+//     cin >> a;
+//     cout << "a's new value: ";
+//     cout << a;
+//     cout << "\n";
+// }
+
+// void testNonShortCircuitedOpeartors() {
+//     // Test +, -, *, /
+//     cout << 1 + 2;
+//     cout << "\n";
+//     cout << 1 - 2;
+//     cout << "\n";
+//     cout << 1 * 2;
+//     cout << "\n";
+//     cout << 1 / 2;
+//     cout << "\n";
+
+//     // Test ==, !=, <, <=, >, >=
+//     cout << 1 == 2;
+//     cout << "\n";
+//     cout << 1 != 2;
+//     cout << "\n";
+//     cout << 1 < 2;
+//     cout << "\n";
+//     cout << 1 <= 2;
+//     cout << "\n";
+//     cout << 1 > 2;
+//     cout << "\n";
+//     cout << 1 >= 2;
+//     cout << "\n";
+
+//     // test multi-opeartor expression
+//     cout << "Expect: 7";
+//     cout << "\n";
+//     cout << 1 + 2 * 3;
+//     cout << "\n";
+// }
+
+// void testUnaryOpeartor() {
+//     cout << -1;
+//     cout << "\n";
+
+//     cout << !true;
+//     cout << "\n";
+
+//     cout << !false;
+//     cout << "\n";
+
+//     cout << !!false;
+//     cout << "\n";
+// }
+
+// void testPostIncreDecre() {
+//     int a;
+//     bool b;
+
+//     a = 1;
+//     b = true;
+
+//     // post increment/decrement
+//     a++;
+//     cout << "Expect: 2\n";
+//     cout << a;
+//     cout << "\n";
+//     a--;
+//     cout << "Expect: 1\n";
+//     cout << a;
+//     cout << "\n";
+// }
+
+
+// bool returnTrue() {
+//     return true;
+// }
+
+// bool returnFalse() {
+//     return false;
+// }
+
+// void testIf() {
+//     bool isFoo;
+
+//     // with literal
+//     cout << "Expected: true branch\n";
+//     if (true) {
+//         cout << "true branch\n";
+//     }
+
+//     cout << "Expected: false branch\n";
+//     if (!false) {
+//         cout << "false branch\n";
+//     }
+
+//     // with id
+//     isFoo = true;
+//     cout << "Expected: foo\n";
+//     if (isFoo) {
+//         cout << "foo\n";
+//     }
+
+//     isFoo = !isFoo;
+//     cout << "Expected:\n";
+//     if (isFoo) {
+//         cout << "foo\n";
+//     }
+
+//     // with assignNode
+//     cout << "Expected: foo\n";
+//     if (isFoo = true) {
+//         cout << "foo\n";
+//     }
+
+//     // with CallExpNode
+//     cout << "Expected: foo\n";
+//     if (returnTrue()) {
+//         cout << "foo\n";
+//     }
+
+//     // with NotNode
+//     cout << "Expected: foo\n";
+//     if (!false) {
+//         cout << "foo\n";
+//     }
+
+//     // with less node
+//     cout << "Expected: foo\n";
+//     if (1 < 2) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (2 < 1) {
+//         cout << "foo\n";
+//     }
+
+//     // with greater node
+//     cout << "Expected: foo\n";
+//     if (2 > 1) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (1 > 2) {
+//         cout << "foo\n";
+//     }
+
+//     // with less eq node
+//     cout << "Expected: foo\n";
+//     if (1 <= 2) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (2 <= 1) {
+//         cout << "foo\n";
+//     }
+
+//     // with greater eq node
+//     cout << "Expected: foo\n";
+//     if (2 >= 1) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (1 >= 2) {
+//         cout << "foo\n";
+//     }
+
+//     // test equal node
+//     cout << "Expected: foo\n";
+//     if (1 == 1) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (1 == 2) {
+//         cout << "foo\n";
+//     }
+
+//     // test not equal node
+//     cout << "Expected: foo\n";
+//     if (2 != 1) {
+//         cout << "foo\n";
+//     }
+//     cout << "Expected:\n";
+//     if (1 != 1) {
+//         cout << "foo\n";
+//     }
+// }
+
+// void testIfElse() {
+//     cout << "Expected: true branch\n";
+//     if (true) {
+//         cout << "true branch\n";
+//     } else {
+//         cout << "false branch\n";
+//     }
+
+//     cout << "Expected: false branch\n";
+//     if (false) {
+//         cout << "true branch\n";
+//     } else {
+//         cout << "false branch\n";
+//     }
+// }
+
+// void testWhile() {
+//     // TODO:
+//     int a;
+//     a = 3;
+//     while (a > 0) {
+//         cout << a;
+//         cout << "\n";
+//         a--;
+//     }
+// }
+
+// void testShortCircuitedOpeartors() {
+//     bool b1;
+//     bool b2;
+//     bool b3;
+
+//     // test &&, ||
+//     cout << true && true;
+//     cout << "\n";
+//     cout << true && false;
+//     cout << "\n";
+//     cout << false && true;
+//     cout << "\n";
+//     cout << false && false;
+//     cout << "\n";
+//     cout << true || true;
+//     cout << "\n";
+//     cout << true || false;
+//     cout << "\n";
+//     cout << false || true;
+//     cout << "\n";
+//     cout << false || false;
+//     cout << "\n";
+
+//     // Test short circuit behavior
+//     b1 = false;
+//     b2 = false;
+//     b3 = false;
+
+//     b1 = b2 && (b3 = true);
+//     cout << "Expected: 0\n";
+//     cout << b1;
+//     cout << "\n";
+//     cout << "Expected: 0\n";
+//     cout << b3;
+//     cout << "\n";
+
+//     b2 = true;
+//     b1 = b2 || (b3 = true);
+//     cout << "Expected: 1\n";
+//     cout << b1;
+//     cout << "\n";
+//     cout << "Expected: 0\n";
+//     cout << b3;
+//     cout << "\n";
+
+//     // Test genCodeJump
+//     b1 = false;
+//     b2 = true;
+//     b3 = false;
+
+//     // Non-short circuit genCodeJump
+//     cout << "Expected: 1\n";
+//     if (b2 && (b3 = true)) {
+//         cout << b3;
+//         cout << "\n";
+//     }
+
+//     b3 = false;
+//     cout << "Expected: 1\n";
+//     if (b1 || (b3 = true)) {
+//         cout << b3;
+//         cout << "\n";
+//     }
+
+//     // short circuit genCodeJump
+//     b1 = false;
+//     b2 = true;
+//     b3 = false;
+
+//     cout << "Expected: 1\n";
+//     if (b1 && (b2 = false)) {
+//     } else {
+//         cout << b2;
+//         cout << "\n";
+//     }
+
+//     cout << "Expected: 0\n";
+//     if (b2 || (b3 = true)) {
+//         cout << b3;
+//         cout << "\n";
+//     }
+// }
+
+// void testStringComparison() {
+//     if ("a" == "abc") {
+//         cout << "unexpected\n";
+//     }
+
+//     if ("a" == "A") {
+//         cout << "unexpected\n";
+//     }
+
+//     if ("a" == "a") {
+//         cout << "yes\n";
+//     }
+
+//     if ("abc" == "abc") {
+//         cout << "yes\n";
+//     }
+// }
+
+// int main() {
+//     // testArgAndReturnCaller();
+//     // testWrite();
+//     // testRead();
+//     // testUnaryOpeartor();
+//     // testPostIncreDecre();
+
+//     // testIf();
+//     // testIfElse();
+//     // testWhile();
+
+//     // testNonShortCircuitedOpeartors();
+//     // testShortCircuitedOpeartors();
+
+//     testStringComparison();
+// }
+
+int main() {
+    cout << "hello world!";
+}
+
+
+

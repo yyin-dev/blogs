@@ -1,0 +1,11 @@
+int fib(int n) {
+    if (n <= 1) { ## fib(0) = fib(1) = 1
+        return 1;
+    } else { /// fib(n) = fib(n-1) + fib(n-2)
+        return fib(n-1) + fib(n-2);
+        "Unterminated string
+    }
+    "Bad escape string \bbb"
+    "Good string"
+}
+"Very bad \A string

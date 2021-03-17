@@ -1,3 +1,0 @@
-"This file only tests properly terminated strings with bad escape \c"
-"backslash followed by space: \ is not allowed"
-"bad escaped character: \a but terminated"

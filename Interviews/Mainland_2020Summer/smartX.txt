@@ -1,0 +1,62 @@
+1. Raft
+
+What state can a server be in?
+How election timeout works?
+When the server becomes a candidate, is it necessary to vote for itself?
+    Answer: yes, consider the case of a 3-server cluster where network partition happens.
+            Then the 2-server parition would not be able to elect a server if the server
+            does not vote for itself when it becomes the candidate.
+            
+Consider 3-server cluster. Suppose A is leader now, and then network partition
+happens where A is in one partition and B, C are in the other. Suppose A, when
+it is still the leader, receives request from the customer and appends to its
+own log. In the other partition, B, C is a majority and is able to function
+as normal. Now, the log of A conflicts with the log of B and C. How Raft ensures
+that A would not become the leader when the network partition is fixed?
+    Answer: What is the criteria for electing the leader? Two conditions 
+            to check: 1. The term of the last entry in the log; 2. If the
+            term of the last entry is the same, check the index.
+            
+            Two cases:
+            (1) Suppose A experiences no crash and thinks itself is the leader
+            throughout the partition period. Since it does not experience the
+            follower -> candidate transition, then its currentTerm would not
+            be able to increase. Everytime it receives request from the client,
+            it append the entry to its own log and sends out AppendEntries, but
+            never succeed. On the other hand, as long as a new leader is elected
+            in the majority paritition of B and C, the term increases. Thus, the
+            ReceivedTerm of A's last log entry < ReceivedTerm of the last log 
+            entry in the majority paritition. So when the partition is fixed, 
+            A cannot be elected and its log would be overwritten.
+            (2) Suppose A experiences some crashes and becomes follower after
+            reboot. A cannot become leader after reboot. Thus, the only period
+            it can append entries to its own log is before crashing. Using
+            similar reasoning as in (1), A's log would be overwritten.
+            
+            There's a hidden problem with this argument though, as you see
+            that two servers exist at the same time, but not in different term.
+            So the guarantee of raft that "at most one leader can be elected
+            in a given term" is still preserved. However, the client has
+            the risk of getting stale data. A is a leader in a previous term
+            and B(or C) is a leader in the current term. Suppose a client
+            sends a READ request to A. 
+            (1) If READ does not require creating a new log entry and gets
+            replicated on a majority of servers, the client could get 
+            stale data;
+            (2) If READ requires creating a new log entry and gets replicated
+            on a majority of servers, this can be inefficient.
+            A possible solution is that if a leader does not receive reply
+            of heartbeat/normal appendEntries from a majority for certain time, 
+            then it assumes that it loses connection and becomes a follower. 
+
+2. OS
+What happens when calling the open() function to open a file?
+What is process, thread, and coroutine?
+How to communiate between processes? Suppose the information exchange is very large?
+Answer: signalling cannot exchange too much memory, the solution is shared memory. 
+Does this violate the requirement the OS requirement of separate memory space? No.
+
+However to use shared data between different threads? Can we do this without locks?
+
+3. Network
+Still taking course. Do not ask.
