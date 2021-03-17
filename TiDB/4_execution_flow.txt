@@ -1,0 +1,57 @@
+conn.go: handleQuery
+// Parsing starts   
+    session.go: Parse
+// Parsing ends; Query plan building starts
+    conn.go: handleStmt
+        driver_tidb.go: ExecuteStmt
+            session.go: ExecuteStmt
+                compiler.go: func (c *Compiler) Compile(ctx context.Context, stmtNode ast.StmtNode) (*ExecStmt, error)
+                    optimize.go: func Optimize(ctx, sctx sessionctx.Context, node ast.Node, is infoschema.InfoSchema) (plannercore.Plan, types.NameSlice, error)
+                        optimize.go: func optimize(ctx context.Context, sctx sessionctx.Context, node ast.Node, is infoschema.InfoSchema) (plannercore.Plan, types.NameSlice, float64, error)
+                            planbuilder.go: func (b *PlanBuilder) Build(ctx context.Context, node ast.Node) (Plan, error)
+                                planbuilder.go: buildInsert(ctx context.Context, insert *ast.InsertStmt) (Plan, error)
+                                    schema, names, err := expression.TableInfo2SchemaAndNames(b.ctx, tn.Schema, tableInfo)
+                                    err := b.buildValuesListOfInsert(ctx, insert, insertPlan, mockTablePlan, checkRefColumn)
+// Query plan building ends; Query optimization starts
+                        logic, isLogicalPlan := p.(plannercore.LogicalPlan)
+                        if !isLogicalPlan {
+                            return p, names, 0, nil
+                        }
+                        finalPlan, cost, err := plannercore.DoOptimize(ctx, sctx, builder.GetOptFlag(), logic)
+// Query optimization ends; executor building starts
+                return &ExecStmt{ Plan: finalPlan, ... } 
+            session.go: runStmt(ctx context.Context, se *session, s sqlexec.Statement) (rs sqlexec.RecordSet, err error)
+                adapter.go: func (a *ExecStmt) Exec(ctx context.Context) (_ sqlexec.RecordSet, err error)       
+                    adapter.go: func (a *ExecStmt) buildExecutor() (Executor, error)
+                        builder.go: func (b *executorBuilder) build(p plannercore.Plan) Executor
+                            builder.go: func (b *executorBuilder) buildInsert(v *plannercore.Insert) Executor
+                                return &InsertExec{ ... }
+// Executor building ends; Execution starts
+                    if handled, result, err := a.handleNoDelay(ctx, e, isPessimistic); handled { // insert is immediately executed
+                        return result, err
+                    }
+                    adapter.go: func (a *ExecStmt) handleNoDelay(ctx context.Context, e Executor, isPessimistic bool) (handled bool, rs sqlexec.RecordSet, err error)
+                        adapter.go: handleNoDelayExecutor
+                            adapter.go: Next()
+                                insert.go: Next()
+                                    insert_common.go: insertRows()
+                                        insert_common.go: evalRow()
+                                        insert.go: (e *InsertExec) exec(ctx context.Context, rows [][]types.Datum) error
+                                                for _, row := range rows {
+                                                        h, err := e.addRecord(ctx, row)
+                                                }
+                                            insert_common.go: addRecord(ctx context.Context, row []types.Datum)
+                                                insert_common.go: addRecordWithAutoIDHint(ctx context.Context, row []types.Datum, reserveAutoIDCount int
+                                                    tables.go: func (t *TableCommon) AddRecord(sctx sessionctx.Context, r []types.Datum, opts ...table.AddRecordOption) (recordID kv.Handle, err error)
+                                                        recordID, err = AllocHandle(ctx, sctx, t)
+                                                        memBuffer.Staging()
+                                                        key := t.RecordKey(recordID) // encode into bytes t{tableID}_r{handle}
+                                                        memBuffer.Set(key, value)
+                                                        tables.go: t.addIndices
+                                                            index.go: Create
+                                                                GenIndexKey
+                                                                GenIndexValuePortal
+                                                                GetMemBuffer().Set(key, idxVal)
+                                                        memBuffer.Release()
+                                                        // Change done in memory buffer, waiting for transaction to commit
+// Execution done
