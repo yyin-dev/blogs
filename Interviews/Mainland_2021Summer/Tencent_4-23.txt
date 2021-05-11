@@ -1,0 +1,9 @@
+What's LRU? How to implement LRU? Write code. (Standard Leetcode problem)
+How to prevent sequential scan from polluting LRU? (I answered that, a DBMS knows whether it's doing a sequential, and can use multiple buffer pools) What if the buffer pool layer is not informed about the operation? (I didn't provide good answer. Found an answer for LRU in MySQL: https://zhuanlan.zhihu.com/p/142087506).
+
+What's deadlock? How to avoid dealock? (I explained four necessary conditions for deadlock to happen. Explains deadlock detection and deadlock avoidance).
+
+How many people needed for two to have the same birthday? (I forgot completely... Two ways to explain: https://betterexplained.com/articles/understanding-the-birthday-paradox/, https://statisticsbyjim.com/fun/birthday-problem/)
+
+How to reverse a list? (Write code)
+How to reverse a list with ascending nodes and remove duplicates? (I said reverse + remove duplicate, 2-pass) Impement one-pass solution. 

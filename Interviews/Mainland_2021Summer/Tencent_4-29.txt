@@ -1,0 +1,8 @@
+腾讯银行业务，目前主要在用数据更新model。感觉不是特别合胃口，面的也不是特别好。
+
+了解paxos吗？paxos和raft有什么区别？有没有看过etcd？答：我不是特别熟悉paxos，看过但是忘记了。说了raft作者对paxos的吐槽。没看过etcd。面试官：你写了raft居然没有看etcd？
+Raft中又哪些常见优化？不太熟悉，说了几点看到过的：prevote机制；leader的带宽占用可能远高于follower；read不经过log。
+
+
+
+

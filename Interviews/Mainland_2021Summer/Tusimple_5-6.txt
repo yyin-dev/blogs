@@ -1,0 +1,154 @@
+两道算法题。
+
+1. 实现一个函数，输入一组升序链表，输出一个包含所有输入链表所有元素的降序链表。
+答案：合并+翻转。合并用C++中的priority_queue。
+
+Node* merge(std::vector<Node*> arr);
+
+输入3个链表
+  A: 1->4->5->7->12
+  B: 1->2->6->7->11->20
+  C: 2->3->3->3
+输出
+  D: 20->12->11->7->7->6->5->4->3->3->3->2->2->1->1
+
+解法：
+```C++
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+class Node {
+public:
+    Node(int v): val(v) {}
+    
+    Node *next;
+    int val;
+};
+
+Node *reverse(Node *l) {
+    Node *prev = nullptr, *curr = l;
+    while (curr) {
+        Node *next = curr->next;
+        
+        curr->next = prev;
+        
+        prev = curr;
+        curr = next;
+    }
+    
+    return prev;
+}
+
+Node* merge(std::vector<Node*> arr) {
+    if (arr.empty())
+        return nullptr;
+    
+    auto comp = [](Node *l1, Node *l2) { return l1->val > l2->val; }; // ?
+    priority_queue<Node*, vector<Node*>, decltype(comp)> pq(comp);
+    for (Node *n : arr)
+        pq.push(n);
+
+    Node *dummy = new Node(0), *res = dummy;
+    while (!pq.empty()) {
+        Node *currMin = pq.top();
+        pq.pop();
+        if (currMin->next)
+            pq.push(currMin->next);
+        
+        res->next = currMin;
+        res = res->next;
+    }
+    
+    Node *reversed = reverse(dummy->next);
+    return reversed;
+}
+
+int main() {
+    Node *l1 = new Node(1);
+    l1->next = new Node(4);
+    l1->next->next = new Node(5);
+    l1->next->next->next = new Node(7);
+    l1->next->next->next->next = new Node(12);
+    
+    Node *l2 = new Node(1);
+    l2->next = new Node(2);
+    l2->next->next = new Node(6);
+    l2->next->next->next = new Node(7);
+    l2->next->next->next->next = new Node(11);
+    l2->next->next->next->next->next = new Node(20);
+    
+    Node *l3 = new Node(2);
+    l3->next = new Node(3);
+    l3->next->next = new Node(3);
+    l3->next->next->next = new Node(3);
+    
+    vector<Node *> testcase({l1, l2, l3});
+    Node *res = merge(testcase);
+    while (res){
+        cout << res->val << "->";
+        res = res->next;
+    }
+}
+```
+
+2. 这里有一个非负整数数组 arr，你最开始位于该数组的起始下标 start 处。当你位于下标 i 处时，你可以跳到 i + arr[i] 或者 i - arr[i]。
+
+请你判断自己是否能够跳到对应元素值为 0 的 任一 下标处。
+
+注意，不管是什么情况下，你都无法跳到数组之外。
+
+Input: arr = [4,2,3,0,3,1,2], start = 5
+Output: true
+Explanation: 
+All possible ways to reach at index 3 with value 0 are: 
+index 5 -> index 4 -> index 1 -> index 3 
+index 5 -> index 6 -> index 4 -> index 1 -> index 3 
+
+Input: arr = [3,0,2,1,2], start = 2
+Output: false
+Explanation: There is no way to reach at index 1 with value 0.
+
+```
+#include <iostream>
+#include <queue>
+using namespace std;
+
+bool findZero(vector<int>& arr, int start) {
+    if (arr.size() <= start)
+       return false;
+    
+    // bfs
+    int n = arr.size();
+    queue<int> q({start});
+    vector<int> visitedIndexes(n, false);
+    while (!q.empty()) {
+        int len = q.size();
+        for (int i = 0; i < len; ++i) {
+            int curr = q.front();
+            q.pop();
+            
+            if (arr[curr] == 0)
+                return true;
+           
+            visitedIndexes[curr] = true;
+            
+            if (0 <= curr-arr[curr] && curr-arr[curr] < n && !visitedIndexes[curr-arr[curr]])
+                q.push(curr-arr[curr]);
+            
+            if (0 <= curr+arr[curr] && curr+arr[curr] < n && !visitedIndexes[curr+arr[curr]])
+                q.push(curr+arr[curr]);
+        }
+    }
+    return false;
+}
+
+int main() {
+    vector<int> arr1({4,2,3,0,3,1,2});
+    cout << findZero(arr1, 5) << endl;
+    
+    vector<int> arr2({3,0,2,1,2});
+    cout << findZero(arr2, 2) << endl;
+}
+```

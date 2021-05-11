@@ -1,0 +1,6 @@
+Introduce projects/internships on your resume. What's the cache consistency check system? What's the design?
+
+What's virtual memory? How do you implement?
+
+What's interrrupt/excpetion mechanism. How is it implemented?
+

@@ -1,0 +1,11 @@
+What's virtual memory in OS? Which register stores page table? (cr3) How many does your page table have in JOS?
+How is interrupt handling implemented?
+
+How TCP connection establishement and teardown works?
+
+What's the index in your database? Briefly explain what's a B+ tree. Why B+ tree supports range query? How do you manage concurreny access to your B+ tree?
+What are different isolation levels? (read uncommitted, read committed, repeatable read, serializable) What are the different problems in each isolation level? 
+
+Does Raft provide strong consistency? What happens when a network partition causes split brain, and what happens when the partition heals? Why Raft needs snapshot?
+
+Implement QuickSort.
